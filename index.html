@@ -1,292 +1,629 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>presence</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: sans-serif; }
-    #app { position: relative; width: 100vw; height: 100vh; }
-    canvas#main { display: block; width: 100%; height: 100%; }
-    video { display: none; }
-    #ui {
-      position: absolute;
-      bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      display: flex; gap: 10px; align-items: center;
-      background: rgba(255,255,255,0.07);
-      border: 0.5px solid rgba(255,255,255,0.15);
-      border-radius: 40px; padding: 10px 18px;
-      white-space: nowrap;
-    }
-    .group-label { color: rgba(255,255,255,0.3); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
-    .divider { width:0.5px; height:20px; background:rgba(255,255,255,0.15); margin:0 4px; }
-    button {
-      background: transparent; color: rgba(255,255,255,0.5);
-      border: 0.5px solid transparent; padding: 5px 12px;
-      border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.15s;
-    }
-    button:hover { color:rgba(255,255,255,0.85); border-color:rgba(255,255,255,0.2); }
-    button.active { color:#fff; border-color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.12); }
-    #status {
-      position:absolute; top:20px; left:50%; transform:translateX(-50%);
-      color:rgba(255,255,255,0.4); font-size:12px; letter-spacing:0.05em;
-      pointer-events:none; background:rgba(0,0,0,0.5);
-      padding:6px 16px; border-radius:20px;
-    }
-    #hand-canvas { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
-  </style>
-</head>
-<body>
-<div id="app">
-  <canvas id="main"></canvas>
-  <canvas id="hand-canvas"></canvas>
-  <video id="vid" autoplay muted playsinline></video>
-  <div id="status">click start &rarr; allow camera</div>
-  <div id="ui">
-    <span class="group-label">physics</span>
-    <button class="active" onclick="setMode('physics','avoid',this)">avoid</button>
-    <button onclick="setMode('physics','attract',this)">attract</button>
-    <button onclick="setMode('physics','orbit',this)">orbit</button>
-    <button onclick="setMode('physics','ripple',this)">ripple</button>
-    <div class="divider"></div>
-    <span class="group-label">texture</span>
-    <button class="active" onclick="setMode('texture','dots',this)">dots</button>
-    <button onclick="setMode('texture','lines',this)">lines</button>
-    <button onclick="setMode('texture','rain',this)">rain</button>
-    <div class="divider"></div>
-    <span class="group-label">color</span>
-    <button class="active" onclick="setMode('color','cyan',this)">cyan</button>
-    <button onclick="setMode('color','fire',this)">fire</button>
-    <button onclick="setMode('color','mono',this)">mono</button>
-    <button onclick="setMode('color','pastel',this)">pastel</button>
-    <div class="divider"></div>
-    <button id="start-btn" onclick="startCam()">start</button>
-  </div>
-</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>touch</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+      body {
+        background: #030306;
+        overflow: hidden;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: white;
+      }
 
-<script>
-let physics   = 'avoid';
-let texture   = 'dots';
-let colorMode = 'cyan';
-const TIP_IDS = [4, 8, 12, 16, 20]; // thumb, index, middle, ring, pinky
-let fingertips = [];
+      #app {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background:
+          radial-gradient(
+            circle at 50% 45%,
+            rgba(150, 122, 88, 0.13),
+            transparent 44%
+          ),
+          radial-gradient(
+            circle at 18% 72%,
+            rgba(130, 94, 70, 0.08),
+            transparent 38%
+          ),
+          radial-gradient(
+            circle at 82% 26%,
+            rgba(178, 135, 86, 0.06),
+            transparent 34%
+          ),
+          #060505;
+      }
 
-const W = window.innerWidth;
-const H = window.innerHeight;
+      canvas#main {
+        display: block;
+        width: 100%;
+        height: 100%;
+        filter: contrast(1.08) saturate(0.72);
+      }
 
-const app = new PIXI.Application({
-  view: document.getElementById('main'),
-  width: W, height: H,
-  backgroundColor: 0x000000,
-  antialias: true,
-  resolution: window.devicePixelRatio || 1,
-  autoDensity: true,
-});
+      video {
+        display: none;
+      }
 
-const fadeOverlay = new PIXI.Graphics();
-app.stage.addChild(fadeOverlay);
-const container = new PIXI.Container();
-app.stage.addChild(container);
+      #hand-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0.5;
+        mix-blend-mode: screen;
+      }
 
-// hand overlay
-const handCanvas = document.getElementById('hand-canvas');
-handCanvas.width = W; handCanvas.height = H;
-const hCtx = handCanvas.getContext('2d');
+      #status {
+        position: absolute;
+        top: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.38);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        pointer-events: none;
+        z-index: 3;
+      }
 
-function drawFingertips() {
-  hCtx.clearRect(0, 0, W, H);
-  fingertips.forEach(pt => {
-    hCtx.beginPath();
-    hCtx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
-    hCtx.strokeStyle = 'rgba(255,255,255,0.55)';
-    hCtx.lineWidth = 1.5;
-    hCtx.stroke();
-    hCtx.beginPath();
-    hCtx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
-    hCtx.fillStyle = 'rgba(255,255,255,0.9)';
-    hCtx.fill();
-  });
-}
+      #guide {
+        position: absolute;
+        left: 32px;
+        bottom: 32px;
+        max-width: 320px;
+        color: rgba(255, 255, 255, 0.32);
+        font-size: 11px;
+        line-height: 1.75;
+        letter-spacing: 0.045em;
+        pointer-events: none;
+        z-index: 3;
+      }
 
-// particles
-const N = 400;
-const particles = [];
-const circleTex = (() => {
-  const g = new PIXI.Graphics();
-  g.beginFill(0xffffff); g.drawCircle(0,0,4); g.endFill();
-  return app.renderer.generateTexture(g);
-})();
+      #guide strong {
+        color: rgba(255, 255, 255, 0.62);
+        font-weight: 400;
+      }
 
-function initParticles() {
-  container.removeChildren();
-  particles.length = 0;
-  for (let i = 0; i < N; i++) {
-    let obj;
-    if (texture === 'dots') { obj = new PIXI.Sprite(circleTex); obj.anchor.set(0.5); }
-    else { obj = new PIXI.Graphics(); }
-    obj.x = Math.random() * W;
-    obj.y = Math.random() * H;
-    obj.vx = (Math.random() - 0.5) * 1.5;
-    obj.vy = texture === 'rain' ? Math.random() * 2 + 1 : (Math.random() - 0.5) * 1.5;
-    obj.hue = Math.random() * 360;
-    obj.baseScale = 0.4 + Math.random() * 0.7;
-    container.addChild(obj);
-    particles.push(obj);
-  }
-}
+      #start-btn {
+        position: absolute;
+        right: 32px;
+        bottom: 32px;
+        z-index: 4;
+        color: rgba(255, 255, 255, 0.62);
+        background: rgba(255, 255, 255, 0.045);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition:
+          opacity 0.35s,
+          transform 0.35s,
+          background 0.2s;
+      }
 
-function applyPhysics(p) {
-  for (const ft of fingertips) {
-    const dx = p.x - ft.x, dy = p.y - ft.y;
-    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-    const R = 150;
-    if (physics === 'avoid' && dist < R) {
-      const f = (R - dist) / R * 3.5;
-      p.vx += (dx/dist)*f; p.vy += (dy/dist)*f;
-    } else if (physics === 'attract' && dist < R*2 && dist > 12) {
-      const f = 1.8/dist;
-      p.vx -= (dx/dist)*f; p.vy -= (dy/dist)*f;
-    } else if (physics === 'orbit' && dist < R*1.5 && dist > 15) {
-      const f = 0.9/dist;
-      p.vx += (-dy/dist)*f - (dx/dist)*0.05;
-      p.vy +=  (dx/dist)*f - (dy/dist)*0.05;
-    } else if (physics === 'ripple' && dist < R) {
-      const wave = Math.sin(dist*0.08 - Date.now()*0.005) * 2.5;
-      p.vx += (dx/dist)*wave*0.3; p.vy += (dy/dist)*wave*0.3;
-    }
-  }
-  if (texture === 'rain') {
-    p.vy += 0.05; p.vx *= 0.97; p.vy = Math.min(p.vy, 8);
-  } else {
-    const damp = physics==='orbit'?0.97:physics==='ripple'?0.96:0.93;
-    p.vx *= damp; p.vy *= damp;
-  }
-  p.x += p.vx; p.y += p.vy;
-  if (texture === 'rain') {
-    if (p.x<0) p.x=W; if (p.x>W) p.x=0;
-    if (p.y>H+30) { p.y=-20; p.vy=Math.random()*2+1; }
-  } else {
-    if (p.x<0){p.x=0;p.vx*=-1;} if (p.x>W){p.x=W;p.vx*=-1;}
-    if (p.y<0){p.y=0;p.vy*=-1;} if (p.y>H){p.y=H;p.vy*=-1;}
-  }
-}
+      #start-btn:hover {
+        background: rgba(255, 255, 255, 0.09);
+        transform: translateY(-1px);
+      }
 
-function getColor(hue, speed) {
-  let h,s,l;
-  if      (colorMode==='cyan')  {h=180+hue*0.1;s=0.8; l=0.5+speed*0.05;}
-  else if (colorMode==='fire')  {h=speed*30;   s=0.9; l=0.45+speed*0.06;}
-  else if (colorMode==='mono')  {h=0;          s=0;   l=0.4+speed*0.12;}
-  else                          {h=hue;        s=0.55;l=0.72;}
-  h=((h%360)+360)%360; l=Math.min(Math.max(l,0.2),0.95);
-  return hslToInt(h/360,s,l);
-}
-function hslToInt(h,s,l){
-  let r,g,b;
-  if(s===0){r=g=b=l;}else{
-    const q=l<0.5?l*(1+s):l+s-l*s,p2=2*l-q;
-    r=hue2rgb(p2,q,h+1/3);g=hue2rgb(p2,q,h);b=hue2rgb(p2,q,h-1/3);
-  }
-  return(Math.round(r*255)<<16)|(Math.round(g*255)<<8)|Math.round(b*255);
-}
-function hue2rgb(p,q,t){
-  if(t<0)t+=1;if(t>1)t-=1;
-  if(t<1/6)return p+(q-p)*6*t;
-  if(t<1/2)return q;
-  if(t<2/3)return p+(q-p)*(2/3-t)*6;
-  return p;
-}
+      #start-btn.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="main"></canvas>
+      <canvas id="hand-canvas"></canvas>
+      <video id="vid" autoplay muted playsinline></video>
 
-app.ticker.add(()=>{
-  fadeOverlay.clear();
-  fadeOverlay.beginFill(0x000000,0.15);
-  fadeOverlay.drawRect(0,0,W,H);
-  fadeOverlay.endFill();
-  for(const p of particles){
-    applyPhysics(p);
-    const speed=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
-    p.hue=(p.hue+speed*0.3)%360;
-    const col=getColor(p.hue,speed);
-    if(texture==='dots'){
-      p.tint=col;
-      p.scale.set(p.baseScale+Math.min(speed*0.2,0.6));
-      p.alpha=0.6+Math.min(speed*0.06,0.4);
-    }else{
-      p.clear();
-      const len=texture==='rain'?14+Math.min(speed*3,20):6+Math.min(speed*2,12);
-      p.lineStyle(1.5,col,0.75);
-      p.moveTo(0,0); p.lineTo(p.vx*1.5,p.vy*1.5-len);
-      p.alpha=0.6+Math.min(speed*0.06,0.4);
-    }
-  }
-  drawFingertips();
-});
+      <div id="status">click start → allow camera</div>
 
-// MediaPipe
-const vid = document.getElementById('vid');
-let detector = null;
+      <div id="guide"></div>
 
-async function startCam(){
-  const btn=document.getElementById('start-btn');
-  const status=document.getElementById('status');
-  btn.textContent='loading...'; btn.disabled=true;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
-    vid.srcObject=stream;
-    await new Promise(r=>vid.onloadedmetadata=r);
-    vid.play();
-    status.textContent='loading hand model...';
-    await tf.setBackend('webgl');
-    await tf.ready();
-    detector=await handPoseDetection.createDetector(
-      handPoseDetection.SupportedModels.MediaPipeHands,
-      {runtime:'mediapipe',solutionPath:'https://cdn.jsdelivr.net/npm/@mediapipe/hands',modelType:'lite',maxHands:1}
-    );
-    status.textContent='show your hand \u2726';
-    btn.textContent='on';
-    detectLoop();
-  }catch(e){
-    console.error(e);
-    status.textContent='camera failed \u2014 using mouse';
-    btn.textContent='failed'; btn.disabled=false;
-    document.addEventListener('mousemove',e=>{fingertips=[{x:e.clientX,y:e.clientY}];});
-  }
-}
+      <button id="start-btn" onclick="startCam()">start</button>
+    </div>
 
-async function detectLoop(){
-  if(!detector)return;
-  try{
-    const hands=await detector.estimateHands(vid,{flipHorizontal:true});
-    if(hands.length>0){
-      const kp=hands[0].keypoints;
-      fingertips=TIP_IDS.map(id=>({
-        x:(kp[id].x/vid.videoWidth)*W,
-        y:(kp[id].y/vid.videoHeight)*H,
-      }));
-    }else{fingertips=[];}
-  }catch(_){}
-  requestAnimationFrame(detectLoop);
-}
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
 
-const groups={physics:['avoid','attract','orbit','ripple'],texture:['dots','lines','rain'],color:['cyan','fire','mono','pastel']};
-function setMode(group,value){
-  if(group==='physics')physics=value;
-  if(group==='texture'){texture=value;initParticles();}
-  if(group==='color')colorMode=value;
-  groups[group].forEach(v=>{
-    const b=[...document.querySelectorAll('#ui button')].find(el=>el.textContent===v);
-    if(b)b.classList.toggle('active',v===value);
-  });
-}
+    <script>
+      let W = window.innerWidth;
+      let H = window.innerHeight;
 
-initParticles();
-</script>
-</body>
+      const app = new PIXI.Application({
+        view: document.getElementById("main"),
+        width: W,
+        height: H,
+        backgroundAlpha: 0,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      const fieldLayer = new PIXI.Container();
+      app.stage.addChild(fieldLayer);
+
+      const mistLayer = new PIXI.Graphics();
+      app.stage.addChild(mistLayer);
+
+      const lineLayer = new PIXI.Graphics();
+      app.stage.addChild(lineLayer);
+
+      const handCanvas = document.getElementById("hand-canvas");
+      const hCtx = handCanvas.getContext("2d");
+      handCanvas.width = W;
+      handCanvas.height = H;
+
+      const vid = document.getElementById("vid");
+      let detector = null;
+
+      let handsState = [];
+      let lastHandsState = [];
+
+      const particles = [];
+
+      // particle number
+      const N = 3600;
+
+      const dotTex = (() => {
+        const g = new PIXI.Graphics();
+        g.beginFill(0xffffff);
+        g.drawCircle(0, 0, 2);
+        g.endFill();
+        return app.renderer.generateTexture(g);
+      })();
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function clamp(v, a, b) {
+        return Math.max(a, Math.min(b, v));
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function hslToInt(h, s, l) {
+        let r, g, b;
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+          };
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1 / 3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1 / 3);
+        }
+        return (
+          (Math.round(r * 255) << 16) |
+          (Math.round(g * 255) << 8) |
+          Math.round(b * 255)
+        );
+      }
+
+      function makeHomePosition(i) {
+        const x = rand(W * 0.045, W * 0.955);
+        const y = rand(H * 0.08, H * 0.92);
+
+        // Slightly bias toward the center
+        const cx = W * 0.5;
+        const cy = H * 0.5;
+        const pull = Math.random() * 0.18;
+
+        return {
+          x: lerp(x, cx, pull),
+          y: lerp(y, cy, pull),
+        };
+      }
+
+      function initParticles() {
+        fieldLayer.removeChildren();
+        particles.length = 0;
+
+        for (let i = 0; i < N; i++) {
+          const home = makeHomePosition(i);
+          const sprite = new PIXI.Sprite(dotTex);
+          sprite.anchor.set(0.5);
+          sprite.x = home.x;
+          sprite.y = home.y;
+          sprite.blendMode = PIXI.BLEND_MODES.ADD;
+
+          const depth = Math.random();
+          const baseSize = lerp(0.08, 0.36, Math.pow(depth, 1.9));
+
+          sprite.scale.set(baseSize);
+          sprite.alpha = lerp(0.09, 0.38, depth);
+
+          const p = {
+            sprite,
+            x: home.x + rand(-5, 5),
+            y: home.y + rand(-5, 5),
+            vx: rand(-0.03, 0.03),
+            vy: rand(-0.03, 0.03),
+            homeX: home.x,
+            homeY: home.y,
+            seed: Math.random() * 1000,
+            depth,
+            baseSize,
+            energy: 0,
+            warmth: Math.random(),
+          };
+
+          particles.push(p);
+          fieldLayer.addChild(sprite);
+        }
+      }
+
+      function flowAngle(x, y, time, seed) {
+        const s1 = 0.0017;
+        const s2 = 0.0038;
+        const s3 = 0.0065;
+
+        // Bigger time values = more visible flowing change.
+        const t1 = time * 0.00012;
+        const t2 = time * 0.00017;
+        const t3 = time * 0.00008;
+
+        const a = Math.sin(x * s1 + y * 0.0007 + t1 + seed * 0.07);
+        const b = Math.cos(y * s1 - x * 0.0005 - t2 + seed * 0.05);
+        const c = Math.sin((x + y) * s2 + t3 + seed * 0.03);
+        const d = Math.cos((x - y) * s3 - t1 + seed * 0.04);
+
+        return (a + b + c * 0.7 + d * 0.45) * Math.PI;
+      }
+
+      function flowColorValue(x, y, time, seed) {
+        const a = Math.sin(x * 0.0012 + time * 0.00009 + seed);
+        const b = Math.cos(y * 0.0015 - time * 0.00007 + seed * 0.4);
+        const c = Math.sin((x + y) * 0.0022 + time * 0.00005);
+        return (a + b + c) / 3;
+      }
+
+      function getHandCenter(hand) {
+        const ids = [0, 5, 9, 17];
+        let x = 0;
+        let y = 0;
+        ids.forEach((id) => {
+          x += hand.keypoints[id].x;
+          y += hand.keypoints[id].y;
+        });
+        return { x: x / ids.length, y: y / ids.length };
+      }
+
+      function updateHands(rawHands) {
+        lastHandsState = handsState;
+
+        handsState = rawHands.map((hand, index) => {
+          const center = getHandCenter(hand);
+          const x = (center.x / vid.videoWidth) * W;
+          const y = (center.y / vid.videoHeight) * H;
+
+          const prev = lastHandsState[index];
+          const vx = prev ? x - prev.x : 0;
+          const vy = prev ? y - prev.y : 0;
+
+          return {
+            x,
+            y,
+            vx,
+            vy,
+            speed: Math.sqrt(vx * vx + vy * vy),
+            role: x < W / 2 ? "left" : "right",
+            keypoints: hand.keypoints.map((k) => ({
+              x: (k.x / vid.videoWidth) * W,
+              y: (k.y / vid.videoHeight) * H,
+            })),
+            prevKeypoints: lastHandsState[index]
+              ? lastHandsState[index].keypoints
+              : null,
+          };
+        });
+      }
+
+      function applyField(p, time) {
+        const angle = flowAngle(p.x, p.y, time, p.seed);
+        const fieldStrength = lerp(0.028, 0.075, p.depth);
+
+        p.vx += Math.cos(angle) * fieldStrength;
+        p.vy += Math.sin(angle) * fieldStrength;
+
+        const homePull = 0.00045;
+        p.vx += (p.homeX - p.x) * homePull;
+        p.vy += (p.homeY - p.y) * homePull;
+
+        p.energy *= 0.925;
+
+        for (const hand of handsState) {
+          const fingerIds = [4, 8, 12, 16, 20];
+
+          for (const id of fingerIds) {
+            const tip = hand.keypoints[id];
+            const prevTip = hand.prevKeypoints ? hand.prevKeypoints[id] : null;
+            if (!tip || !prevTip) continue;
+
+            const tvx = tip.x - prevTip.x;
+            const tvy = tip.y - prevTip.y;
+            const tipSpeed = Math.sqrt(tvx * tvx + tvy * tvy);
+
+            // no movement = no particle change.
+            if (tipSpeed < 1.2) continue;
+
+            const dx = p.x - tip.x;
+            const dy = p.y - tip.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+            const radius = 92 + clamp(tipSpeed * 2.0, 0, 110);
+            const influence = Math.pow(clamp(1 - dist / radius, 0, 1), 1.8);
+            if (influence <= 0) continue;
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            // base displacement
+            const push = influence * clamp(tipSpeed * 0.01, 0, 0.28);
+
+            // fast movement creates dispersion
+            const scatter = Math.pow(clamp(tipSpeed / 22, 0, 1), 1.8);
+
+            // outward burst force
+            p.vx += nx * push * (1 + scatter * 4.5);
+            p.vy += ny * push * (1 + scatter * 4.5);
+
+            // slight random turbulence during fast motion
+            p.vx += (Math.random() - 0.5) * scatter * 0.45;
+            p.vy += (Math.random() - 0.5) * scatter * 0.45;
+
+            const ripple =
+              influence *
+              Math.sin(dist * 0.08 - performance.now() * 0.018) *
+              0.055;
+            p.vx += -ny * ripple;
+            p.vy += nx * ripple;
+
+            p.energy += influence * clamp(tipSpeed * 0.028, 0.03, 1.1);
+          }
+        }
+
+        p.vx *= 0.982;
+        p.vy *= 0.982;
+
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        const maxSpeed = 1.25 + p.energy * 0.9;
+        if (speed > maxSpeed) {
+          p.vx = (p.vx / speed) * maxSpeed;
+          p.vy = (p.vy / speed) * maxSpeed;
+        }
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < -10) p.x = W + 10;
+        if (p.x > W + 10) p.x = -10;
+        if (p.y < -10) p.y = H + 10;
+        if (p.y > H + 10) p.y = -10;
+      }
+
+      function drawHandOverlay() {
+        hCtx.clearRect(0, 0, W, H);
+
+        handsState.forEach((hand) => {
+          const alpha = clamp(0.26 + hand.speed * 0.006, 0.26, 0.72);
+
+          [4, 8, 12, 16, 20].forEach((id, index) => {
+            const pt = hand.keypoints[id];
+            const r = index === 1 ? 2.3 : 1.45; // index finger is slightly easier to locate
+
+            hCtx.beginPath();
+            hCtx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+            hCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+            hCtx.fill();
+          });
+        });
+      }
+
+      function drawConnections() {
+        lineLayer.clear();
+
+        for (let i = 0; i < particles.length; i += 11) {
+          const a = particles[i];
+          if (a.energy < 0.08) continue;
+
+          for (
+            let j = i + 11;
+            j < Math.min(i + 140, particles.length);
+            j += 11
+          ) {
+            const b = particles[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy;
+            const maxD = 36;
+
+            if (d2 < maxD * maxD) {
+              const d = Math.sqrt(d2);
+              const alpha = (1 - d / maxD) * 0.08 * (a.energy + b.energy);
+              const col = hslToInt(0.6, 0.26, 0.76);
+              lineLayer.lineStyle(0.65, col, clamp(alpha, 0, 0.16));
+              lineLayer.moveTo(a.x, a.y);
+              lineLayer.lineTo(b.x, b.y);
+            }
+          }
+        }
+      }
+
+      function drawMist() {}
+
+      function renderParticles(time) {
+        for (const p of particles) {
+          applyField(p, time);
+
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          const energy = clamp(p.energy, 0, 1.5);
+
+          const flowColor = flowColorValue(p.x, p.y, time, p.seed);
+
+          const baseHue = lerp(0.075, 0.13, (flowColor + 1) * 0.5);
+          const activeHue = 0.02;
+          const hue = lerp(baseHue, activeHue, energy * 0.35);
+          const sat = lerp(0.18, 0.52, energy + Math.abs(flowColor) * 0.22);
+          const light = lerp(
+            0.76,
+            0.95,
+            clamp(
+              energy * 0.75 + speed * 0.15 + Math.abs(flowColor) * 0.16,
+              0,
+              1,
+            ),
+          );
+
+          p.sprite.tint = hslToInt(hue, sat, light);
+          p.sprite.x = p.x;
+          p.sprite.y = p.y;
+          p.sprite.alpha = clamp(
+            0.12 + p.depth * 0.22 + energy * 0.34 + speed * 0.018,
+            0.1,
+            0.86,
+          );
+
+          p.sprite.scale.set(
+            p.baseSize + energy * 0.36 + clamp(speed * 0.022, 0, 0.26),
+          );
+        }
+      }
+
+      app.ticker.add(() => {
+        const time = performance.now();
+        renderParticles(time);
+        drawConnections();
+        drawMist();
+        drawHandOverlay();
+      });
+
+      async function startCam() {
+        const btn = document.getElementById("start-btn");
+        const status = document.getElementById("status");
+
+        btn.textContent = "loading";
+        btn.disabled = true;
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: 640,
+              height: 480,
+              facingMode: "user",
+            },
+          });
+
+          vid.srcObject = stream;
+          await new Promise((resolve) => (vid.onloadedmetadata = resolve));
+          vid.play();
+
+          status.textContent = "loading hand model";
+
+          await tf.setBackend("webgl");
+          await tf.ready();
+
+          detector = await handPoseDetection.createDetector(
+            handPoseDetection.SupportedModels.MediaPipeHands,
+            {
+              runtime: "mediapipe",
+              solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands",
+              modelType: "lite",
+              maxHands: 2,
+            },
+          );
+
+          status.textContent = "the field is listening";
+          btn.classList.add("hidden");
+          detectLoop();
+        } catch (e) {
+          console.error(e);
+          status.textContent = "camera failed — using mouse";
+          btn.textContent = "failed";
+          btn.disabled = false;
+
+          document.addEventListener("mousemove", (e) => {
+            const prev = handsState[0];
+            handsState = [
+              {
+                x: e.clientX,
+                y: e.clientY,
+                vx: prev ? e.clientX - prev.x : 0,
+                vy: prev ? e.clientY - prev.y : 0,
+                speed: prev
+                  ? Math.hypot(e.clientX - prev.x, e.clientY - prev.y)
+                  : 0,
+                role: e.clientX < W / 2 ? "left" : "right",
+                keypoints: Array.from({ length: 21 }, () => ({
+                  x: e.clientX,
+                  y: e.clientY,
+                })),
+                prevKeypoints: prev
+                  ? Array.from({ length: 21 }, () => ({ x: prev.x, y: prev.y }))
+                  : null,
+              },
+            ];
+          });
+        }
+      }
+
+      async function detectLoop() {
+        if (!detector) return;
+
+        try {
+          const hands = await detector.estimateHands(vid, {
+            flipHorizontal: true,
+          });
+          updateHands(hands);
+        } catch (e) {
+          console.warn(e);
+        }
+
+        requestAnimationFrame(detectLoop);
+      }
+
+      window.addEventListener("resize", () => {
+        W = window.innerWidth;
+        H = window.innerHeight;
+
+        app.renderer.resize(W, H);
+        handCanvas.width = W;
+        handCanvas.height = H;
+
+        initParticles();
+      });
+
+      initParticles();
+    </script>
+  </body>
 </html>
