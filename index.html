@@ -10,7 +10,6 @@
         padding: 0;
         box-sizing: border-box;
       }
-
       body {
         background: #030306;
         overflow: hidden;
@@ -18,7 +17,6 @@
           ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         color: white;
       }
-
       #app {
         position: relative;
         width: 100vw;
@@ -41,18 +39,15 @@
           ),
           #060505;
       }
-
       canvas#main {
         display: block;
         width: 100%;
         height: 100%;
         filter: contrast(1.08) saturate(0.72);
       }
-
       video {
         display: none;
       }
-
       #hand-canvas {
         position: absolute;
         inset: 0;
@@ -62,7 +57,6 @@
         opacity: 0.5;
         mix-blend-mode: screen;
       }
-
       #status {
         position: absolute;
         top: 22px;
@@ -75,7 +69,6 @@
         pointer-events: none;
         z-index: 3;
       }
-
       #guide {
         position: absolute;
         left: 32px;
@@ -88,12 +81,10 @@
         pointer-events: none;
         z-index: 3;
       }
-
       #guide strong {
         color: rgba(255, 255, 255, 0.62);
         font-weight: 400;
       }
-
       #start-btn {
         position: absolute;
         right: 32px;
@@ -114,12 +105,10 @@
           transform 0.35s,
           background 0.2s;
       }
-
       #start-btn:hover {
         background: rgba(255, 255, 255, 0.09);
         transform: translateY(-1px);
       }
-
       #start-btn.hidden {
         opacity: 0;
         pointer-events: none;
@@ -131,7 +120,6 @@
       <canvas id="main"></canvas>
       <canvas id="hand-canvas"></canvas>
       <video id="vid" autoplay muted playsinline></video>
-
       <div id="status">click start → allow camera</div>
       <div id="guide"></div>
       <button id="start-btn" onclick="startCam()">start</button>
@@ -159,10 +147,8 @@
 
       const fieldLayer = new PIXI.Container();
       app.stage.addChild(fieldLayer);
-
       const mistLayer = new PIXI.Graphics();
       app.stage.addChild(mistLayer);
-
       const lineLayer = new PIXI.Graphics();
       app.stage.addChild(lineLayer);
 
@@ -173,20 +159,16 @@
 
       const vid = document.getElementById("vid");
       let detector = null;
-
-      let handsState = [];
-      let lastHandsState = [];
-
+      let handsState = [],
+        lastHandsState = [];
       const particles = [];
       const N = 4800;
-
       let fieldPreset = {};
       let lastGestureTrigger = 0;
       let dotTex = null;
 
       function makeParticleTexture(kind) {
         const g = new PIXI.Graphics();
-
         if (kind === "line") {
           g.lineStyle(1.5, 0xffffff, 1);
           g.moveTo(-3, 0);
@@ -200,18 +182,15 @@
           g.drawCircle(0, 0, 2.2);
           g.endFill();
         }
-
         return app.renderer.generateTexture(g);
       }
 
       function rand(min, max) {
         return min + Math.random() * (max - min);
       }
-
       function clamp(v, a, b) {
         return Math.max(a, Math.min(b, v));
       }
-
       function lerp(a, b, t) {
         return a + (b - a) * t;
       }
@@ -244,23 +223,42 @@
       }
 
       function randomizeField() {
-        const paletteFamilies = [
-          [0.06, 0.1, 0.14],
-          [0.78, 0.84, 0.91],
-          [0.52, 0.58, 0.64],
-          [0.9, 0.96, 0.03],
-          [0.68, 0.73, 0.79],
-          [0.02, 0.07, 0.12],
+        const gradientCombos = [
+          [0.6, 0.85],
+          [0.7, 0.08],
+          [0.82, 0.06],
+          [0.55, 0.82],
+          [0.65, 0.92],
+          [0.92, 0.08],
+          [0.6, 0.75, 0.9],
+          [0.82, 0.7, 0.55],
+          [0.08, 0.82, 0.65],
+          [0.9, 0.75, 0.6],
+          [0.68, 0.55, 0.92],
+          [0.06, 0.92, 0.78],
         ];
 
-        const palette =
-          paletteFamilies[Math.floor(rand(0, paletteFamilies.length))];
+        const gradientTypes = ["linear", "radial", "diagonal", "bilinear"];
         const particleKinds = ["dot", "line", "dash"];
 
+        const hues = gradientCombos[Math.floor(rand(0, gradientCombos.length))];
+
         fieldPreset = {
-          palette,
-          sat: rand(0.22, 0.48),
-          light: rand(0.72, 0.9),
+          // gradient
+          hues,
+          gradientType:
+            gradientTypes[Math.floor(rand(0, gradientTypes.length))],
+          gradientAngle: rand(0, Math.PI * 2), // for linear/diagonal
+          gradientCenterX: rand(0.2, 0.8), // for radial (normalised)
+          gradientCenterY: rand(0.2, 0.8),
+          gradientCenterX2: rand(0.2, 0.8), // for bilinear second centre
+          gradientCenterY2: rand(0.2, 0.8),
+
+          // color ranges
+          sat: rand(0.28, 0.48),
+          light: rand(0.52, 0.68), // base brightness, capped below white
+
+          // physics
           fieldStrength: rand(0.018, 0.09),
           homePull: rand(0.00025, 0.0012),
           waveScale1: rand(0.001, 0.006),
@@ -282,29 +280,65 @@
         initParticles();
       }
 
+      function getGradientT(x, y) {
+        const fp = fieldPreset;
+        const xn = x / W; // normalised 0-1
+        const yn = y / H;
+
+        if (fp.gradientType === "linear") {
+          // project position onto gradient angle direction
+          const t =
+            xn * Math.cos(fp.gradientAngle) + yn * Math.sin(fp.gradientAngle);
+          return clamp((t + 1) * 0.5, 0, 1);
+        } else if (fp.gradientType === "radial") {
+          // distance from random centre point
+          const dx = xn - fp.gradientCenterX;
+          const dy = yn - fp.gradientCenterY;
+          return clamp(Math.sqrt(dx * dx + dy * dy) * 1.6, 0, 1);
+        } else if (fp.gradientType === "diagonal") {
+          return clamp(xn * 0.5 + yn * 0.5, 0, 1);
+        } else {
+          const dx1 = xn - fp.gradientCenterX,
+            dy1 = yn - fp.gradientCenterY;
+          const dx2 = xn - fp.gradientCenterX2,
+            dy2 = yn - fp.gradientCenterY2;
+          const d1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+          const d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          return clamp(d1 / (d1 + d2 + 0.001), 0, 1);
+        }
+      }
+
+      function sampleGradient(t) {
+        const hues = fieldPreset.hues;
+        if (hues.length === 2) {
+          return lerp(hues[0], hues[1], t);
+        }
+        if (t < 0.5) {
+          return lerp(hues[0], hues[1], t * 2);
+        }
+        return lerp(hues[1], hues[2], (t - 0.5) * 2);
+      }
+
       function makeHomePosition(i) {
         const shape = fieldPreset.shape || 0;
-
         if (shape === 0) {
-          const x = rand(W * 0.045, W * 0.955);
-          const y = rand(H * 0.08, H * 0.92);
+          const x = rand(W * 0.045, W * 0.955),
+            y = rand(H * 0.08, H * 0.92);
           const pull = Math.random() * 0.18;
           return { x: lerp(x, W * 0.5, pull), y: lerp(y, H * 0.5, pull) };
         }
-
         if (shape === 1) {
-          const rows = 80;
-          const cols = Math.ceil(N / rows);
-          const row = i % rows;
-          const col = Math.floor(i / rows);
-          const xNorm = col / cols;
-          const yNorm = row / rows;
+          const rows = 80,
+            cols = Math.ceil(N / rows);
+          const row = i % rows,
+            col = Math.floor(i / rows);
+          const xNorm = col / cols,
+            yNorm = row / rows;
           const x = lerp(W * 0.05, W * 0.95, xNorm);
           const wave = Math.sin(xNorm * Math.PI * 5 + yNorm * 10) * 45;
           const y = lerp(H * 0.2, H * 0.82, yNorm) + wave;
           return { x: x + rand(-2, 2), y: y + rand(-2, 2) };
         }
-
         if (shape === 2) {
           const angle = rand(0, Math.PI * 2);
           const radius = Math.sqrt(Math.random()) * Math.min(W, H) * 0.38;
@@ -313,7 +347,6 @@
             y: H * 0.5 + Math.sin(angle) * radius * 0.72 + rand(-4, 4),
           };
         }
-
         const band = Math.floor(rand(0, 5));
         const x = rand(W * 0.04, W * 0.96);
         const yBase = H * (0.2 + band * 0.14);
@@ -324,7 +357,6 @@
       function initParticles() {
         fieldLayer.removeChildren();
         particles.length = 0;
-
         for (let i = 0; i < N; i++) {
           const home = makeHomePosition(i);
           const sprite = new PIXI.Sprite(dotTex);
@@ -332,14 +364,11 @@
           sprite.x = home.x;
           sprite.y = home.y;
           sprite.blendMode = PIXI.BLEND_MODES.ADD;
-
           const depth = Math.random();
           const baseSize =
             lerp(0.1, 0.48, Math.pow(depth, 1.9)) * fieldPreset.sizeBoost;
-
           sprite.scale.set(baseSize);
           sprite.alpha = lerp(0.16, 0.55, depth) * fieldPreset.alphaBoost;
-
           const p = {
             sprite,
             x: home.x + rand(-5, 5),
@@ -354,17 +383,16 @@
             energy: 0,
             warmth: Math.random(),
           };
-
           particles.push(p);
           fieldLayer.addChild(sprite);
         }
       }
 
       function flowAngle(x, y, time, seed) {
-        const s1 = fieldPreset.waveScale1;
-        const s2 = fieldPreset.waveScale2;
-        const t1 = time * fieldPreset.waveSpeed1;
-        const t2 = time * fieldPreset.waveSpeed2;
+        const s1 = fieldPreset.waveScale1,
+          s2 = fieldPreset.waveScale2;
+        const t1 = time * fieldPreset.waveSpeed1,
+          t2 = time * fieldPreset.waveSpeed2;
         const a = Math.sin(x * s1 + y * 0.0007 + t1 + seed * 0.07);
         const b = Math.cos(y * s1 - x * 0.0005 - t2 + seed * 0.05);
         const c = Math.sin((x + y) * s2 + t1 * 0.7 + seed * 0.03);
@@ -381,8 +409,8 @@
 
       function getHandCenter(hand) {
         const ids = [0, 5, 9, 17];
-        let x = 0;
-        let y = 0;
+        let x = 0,
+          y = 0;
         ids.forEach((id) => {
           x += hand.keypoints[id].x;
           y += hand.keypoints[id].y;
@@ -392,16 +420,13 @@
 
       function updateHands(rawHands) {
         lastHandsState = handsState;
-
         handsState = rawHands.map((hand, index) => {
           const center = getHandCenter(hand);
           const x = (center.x / vid.videoWidth) * W;
           const y = (center.y / vid.videoHeight) * H;
-
           const prev = lastHandsState[index];
           const vx = prev ? x - prev.x : 0;
           const vy = prev ? y - prev.y : 0;
-
           return {
             x,
             y,
@@ -422,21 +447,17 @@
 
       function checkFingerTouchGesture() {
         if (handsState.length < 2) return;
-
         const fingerIds = [4, 8, 12, 16, 20];
         const now = performance.now();
-
         for (let i = 0; i < handsState.length; i++) {
           for (let j = i + 1; j < handsState.length; j++) {
-            const handA = handsState[i];
-            const handB = handsState[j];
-
+            const handA = handsState[i],
+              handB = handsState[j];
             for (const idA of fingerIds) {
               for (const idB of fingerIds) {
-                const a = handA.keypoints[idA];
-                const b = handB.keypoints[idB];
+                const a = handA.keypoints[idA],
+                  b = handB.keypoints[idB];
                 const d = Math.hypot(a.x - b.x, a.y - b.y);
-
                 if (d < 35 && now - lastGestureTrigger > 1200) {
                   lastGestureTrigger = now;
                   randomizeField();
@@ -455,75 +476,56 @@
           fieldPreset.fieldStrength,
           p.depth,
         );
-
         p.vx += Math.cos(angle) * fieldStrength;
         p.vy += Math.sin(angle) * fieldStrength;
-
-        const homePull = fieldPreset.homePull;
-        p.vx += (p.homeX - p.x) * homePull;
-        p.vy += (p.homeY - p.y) * homePull;
-
+        p.vx += (p.homeX - p.x) * fieldPreset.homePull;
+        p.vy += (p.homeY - p.y) * fieldPreset.homePull;
         p.energy *= 0.925;
 
         for (const hand of handsState) {
-          const fingerIds = [4, 8, 12, 16, 20];
-
-          for (const id of fingerIds) {
+          for (const id of [4, 8, 12, 16, 20]) {
             const tip = hand.keypoints[id];
             const prevTip = hand.prevKeypoints ? hand.prevKeypoints[id] : null;
             if (!tip || !prevTip) continue;
-
-            const tvx = tip.x - prevTip.x;
-            const tvy = tip.y - prevTip.y;
+            const tvx = tip.x - prevTip.x,
+              tvy = tip.y - prevTip.y;
             const tipSpeed = Math.sqrt(tvx * tvx + tvy * tvy);
-
             if (tipSpeed < 1.2) continue;
-
-            const dx = p.x - tip.x;
-            const dy = p.y - tip.y;
+            const dx = p.x - tip.x,
+              dy = p.y - tip.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-
             const radius = 92 + clamp(tipSpeed * 2.0, 0, 110);
             const influence = Math.pow(clamp(1 - dist / radius, 0, 1), 1.8);
             if (influence <= 0) continue;
-
-            const nx = dx / dist;
-            const ny = dy / dist;
-
+            const nx = dx / dist,
+              ny = dy / dist;
             const push =
               influence * clamp(tipSpeed * fieldPreset.pushStrength, 0, 0.28);
             const scatter = Math.pow(clamp(tipSpeed / 22, 0, 1), 1.8);
-
             p.vx += nx * push * (1 + scatter * fieldPreset.scatterStrength);
             p.vy += ny * push * (1 + scatter * fieldPreset.scatterStrength);
-
             p.vx += (Math.random() - 0.5) * scatter * 0.45;
             p.vy += (Math.random() - 0.5) * scatter * 0.45;
-
             const ripple =
               influence *
               Math.sin(dist * 0.08 - performance.now() * 0.018) *
               fieldPreset.rippleStrength;
             p.vx += -ny * ripple;
             p.vy += nx * ripple;
-
             p.energy += influence * clamp(tipSpeed * 0.028, 0.03, 1.1);
           }
         }
 
         p.vx *= 0.982;
         p.vy *= 0.982;
-
         const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         const maxSpeed = 1.25 + p.energy * 0.9;
         if (speed > maxSpeed) {
           p.vx = (p.vx / speed) * maxSpeed;
           p.vy = (p.vy / speed) * maxSpeed;
         }
-
         p.x += p.vx;
         p.y += p.vy;
-
         if (p.x < -10) p.x = W + 10;
         if (p.x > W + 10) p.x = -10;
         if (p.y < -10) p.y = H + 10;
@@ -532,14 +534,11 @@
 
       function drawHandOverlay() {
         hCtx.clearRect(0, 0, W, H);
-
         handsState.forEach((hand) => {
           const alpha = clamp(0.26 + hand.speed * 0.006, 0.26, 0.72);
-
           [4, 8, 12, 16, 20].forEach((id, index) => {
-            const pt = hand.keypoints[id];
-            const r = index === 1 ? 2.3 : 1.45;
-
+            const pt = hand.keypoints[id],
+              r = index === 1 ? 2.3 : 1.45;
             hCtx.beginPath();
             hCtx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
             hCtx.fillStyle = `rgba(255,255,255,${alpha})`;
@@ -550,27 +549,27 @@
 
       function drawConnections() {
         lineLayer.clear();
-
         for (let i = 0; i < particles.length; i += 11) {
           const a = particles[i];
           if (a.energy < 0.08) continue;
-
           for (
             let j = i + 11;
             j < Math.min(i + 140, particles.length);
             j += 11
           ) {
             const b = particles[j];
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const d2 = dx * dx + dy * dy;
-            const maxD = 36;
-
+            const dx = a.x - b.x,
+              dy = a.y - b.y,
+              d2 = dx * dx + dy * dy,
+              maxD = 36;
             if (d2 < maxD * maxD) {
               const d = Math.sqrt(d2);
               const alpha = (1 - d / maxD) * 0.08 * (a.energy + b.energy);
-              const col = hslToInt(0.6, 0.26, 0.76);
-              lineLayer.lineStyle(0.65, col, clamp(alpha, 0, 0.16));
+              lineLayer.lineStyle(
+                0.65,
+                hslToInt(0.6, 0.26, 0.76),
+                clamp(alpha, 0, 0.16),
+              );
               lineLayer.moveTo(a.x, a.y);
               lineLayer.lineTo(b.x, b.y);
             }
@@ -578,37 +577,31 @@
         }
       }
 
-      function drawMist() {}
-
       function renderParticles(time) {
         for (const p of particles) {
           applyField(p, time);
-
           const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
           const energy = clamp(p.energy, 0, 1.5);
           const flowColor = flowColorValue(p.x, p.y, time, p.seed);
 
-          const palette = fieldPreset.palette;
-          const colorPos = clamp(
-            (flowColor + 1) * 0.5 + energy * 0.45 + speed * 0.08,
-            0,
-            0.999,
-          );
-          const colorIndex = Math.floor(colorPos * palette.length);
-          const hue = palette[colorIndex];
+          const baseT = getGradientT(p.x, p.y);
+          const activity = clamp(energy * 0.4 + speed * 0.3, 0, 0.35);
+          const t = clamp(baseT + activity, 0, 1);
+          const hue = sampleGradient(t);
+
           const sat = lerp(
-            0.18,
+            fieldPreset.sat * 0.75,
             fieldPreset.sat,
-            clamp(energy + Math.abs(flowColor) * 0.28, 0, 1),
+            clamp(energy * 0.7 + Math.abs(flowColor) * 0.3, 0, 1),
           );
-          const light = lerp(
-            fieldPreset.light,
-            0.96,
-            clamp(
-              energy * 0.65 + speed * 0.18 + Math.abs(flowColor) * 0.18,
-              0,
-              1,
+
+          const light = Math.min(
+            lerp(
+              fieldPreset.light * 0.85,
+              fieldPreset.light + 0.06,
+              clamp(energy * 0.6 + speed * 0.2, 0, 1),
             ),
+            0.67,
           );
 
           p.sprite.tint = hslToInt(hue, sat, light);
@@ -622,7 +615,6 @@
 
           const scale =
             p.baseSize + energy * 0.42 + clamp(speed * 0.026, 0, 0.32);
-
           if (
             fieldPreset.particleKind === "line" ||
             fieldPreset.particleKind === "dash"
@@ -639,35 +631,24 @@
         const time = performance.now();
         renderParticles(time);
         drawConnections();
-        drawMist();
         drawHandOverlay();
       });
 
       async function startCam() {
         const btn = document.getElementById("start-btn");
         const status = document.getElementById("status");
-
         btn.textContent = "loading";
         btn.disabled = true;
-
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: 640,
-              height: 480,
-              facingMode: "user",
-            },
+            video: { width: 640, height: 480, facingMode: "user" },
           });
-
           vid.srcObject = stream;
           await new Promise((resolve) => (vid.onloadedmetadata = resolve));
           vid.play();
-
           status.textContent = "loading hand model";
-
           await tf.setBackend("webgl");
           await tf.ready();
-
           detector = await handPoseDetection.createDetector(
             handPoseDetection.SupportedModels.MediaPipeHands,
             {
@@ -677,7 +658,6 @@
               maxHands: 2,
             },
           );
-
           status.textContent = "the field is listening";
           btn.classList.add("hidden");
           detectLoop();
@@ -686,7 +666,6 @@
           status.textContent = "camera failed — using mouse";
           btn.textContent = "failed";
           btn.disabled = false;
-
           document.addEventListener("mousemove", (e) => {
             const prev = handsState[0];
             handsState = [
@@ -714,7 +693,6 @@
 
       async function detectLoop() {
         if (!detector) return;
-
         try {
           const hands = await detector.estimateHands(vid, {
             flipHorizontal: true,
@@ -724,18 +702,15 @@
         } catch (e) {
           console.warn(e);
         }
-
         requestAnimationFrame(detectLoop);
       }
 
       window.addEventListener("resize", () => {
         W = window.innerWidth;
         H = window.innerHeight;
-
         app.renderer.resize(W, H);
         handCanvas.width = W;
         handCanvas.height = H;
-
         randomizeField();
       });
 
