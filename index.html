@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>touch</title>
@@ -13,8 +19,7 @@
       body {
         background: #030306;
         overflow: hidden;
-        font-family:
-          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-family: "Azeret Mono", monospace;
         color: white;
       }
       #app {
@@ -58,24 +63,15 @@
         mix-blend-mode: screen;
       }
       #status {
-        position: absolute;
-        top: 22px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: rgba(255, 255, 255, 0.38);
-        font-size: 10px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        pointer-events: none;
-        z-index: 3;
+        display: none;
       }
       #guide {
         position: absolute;
         left: 32px;
         bottom: 32px;
         max-width: 320px;
-        color: rgba(255, 255, 255, 0.32);
-        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 10px;
         line-height: 1.75;
         letter-spacing: 0.045em;
         pointer-events: none;
@@ -86,24 +82,20 @@
         font-weight: 400;
       }
       #start-btn {
-        position: absolute;
-        right: 32px;
-        bottom: 32px;
-        z-index: 4;
-        color: rgba(255, 255, 255, 0.62);
-        background: rgba(255, 255, 255, 0.045);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 12px 32px;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        color: rgba(255, 255, 255, 0.75);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.22);
         border-radius: 999px;
-        padding: 10px 18px;
-        font-size: 10px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
         cursor: pointer;
         backdrop-filter: blur(10px);
         transition:
           opacity 0.35s,
-          transform 0.35s,
-          background 0.2s;
+          background 0.2s,
+          transform 0.2s;
+        font-family: "Azeret Mono", monospace;
       }
       #start-btn:hover {
         background: rgba(255, 255, 255, 0.09);
@@ -112,6 +104,71 @@
       #start-btn.hidden {
         opacity: 0;
         pointer-events: none;
+      }
+
+      #tutorial {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity 0.8s ease;
+      }
+      #tutorial.hidden {
+        opacity: 0;
+      }
+      #tutorial-step {
+        text-align: center;
+        animation: stepIn 0.5s ease;
+      }
+      @keyframes stepIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      #tutorial-number {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.28);
+        margin-bottom: 16px;
+        display: none;
+      }
+      #tutorial-title {
+        font-size: 22px;
+        font-weight: 300;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.88);
+        margin-bottom: 10px;
+      }
+      #tutorial-sub {
+        font-size: 14px;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.8;
+      }
+      #tutorial-progress {
+        display: flex;
+        gap: 6px;
+        margin-top: 32px;
+      }
+      .prog-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: background 0.3s;
+      }
+      .prog-dot.active {
+        background: rgba(255, 255, 255, 0.75);
       }
     </style>
   </head>
@@ -122,7 +179,27 @@
       <video id="vid" autoplay muted playsinline></video>
       <div id="status">click start → allow camera</div>
       <div id="guide"></div>
-      <button id="start-btn" onclick="startCam()">start</button>
+      <div id="tutorial">
+        <div id="tutorial-step">
+          <div id="tutorial-number">step1 of 5</div>
+          <div id="tutorial-title">press start</div>
+          <div id="tutorial-sub">then allow camera access<br /></div>
+        </div>
+        <div id="tutorial-progress">
+          <div class="prog-dot active"></div>
+          <div class="prog-dot"></div>
+          <div class="prog-dot"></div>
+          <div class="prog-dot"></div>
+          <div class="prog-dot"></div>
+        </div>
+        <button
+          id="start-btn"
+          onclick="startCam()"
+          style="margin-top: 32px; pointer-events: all"
+        >
+          start
+        </button>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
@@ -167,16 +244,95 @@
       let lastGestureTrigger = 0;
       let dotTex = null;
 
+      const STEPS = [
+        {
+          num: "step 1 of 5",
+          title: "press start",
+          sub: "then allow camera access",
+        },
+        {
+          num: "step 2 of 5",
+          title: "initialising hand model...",
+          sub: "takes about 5 seconds",
+        },
+        {
+          num: "step 3 of 5",
+          title: "raise one hand",
+          sub: "try to move slowly<br/>in front of your camera",
+        },
+        {
+          num: "step 4 of 5",
+          title: "raise your other hand",
+          sub: "move them slowly",
+        },
+        {
+          num: "step 5 of 5",
+          title: "touch your left & right fingertips together",
+          sub: "to change the field",
+        },
+      ];
+      let tutorialStep = 0;
+      let tutorialDone = false;
+
+      function setTutorialStep(i) {
+        if (tutorialDone) return;
+        tutorialStep = i;
+        const s = STEPS[i];
+        document.getElementById("tutorial-number").textContent = s.num;
+        document.getElementById("tutorial-title").textContent = s.title;
+        document.getElementById("tutorial-sub").innerHTML = s.sub;
+        const el = document.getElementById("tutorial-step");
+        el.style.animation = "none";
+        el.offsetHeight; // reflow to restart animation
+        el.style.animation = "stepIn 1.5s ease";
+        document.querySelectorAll(".prog-dot").forEach((d, idx) => {
+          d.classList.toggle("active", idx === i);
+        });
+      }
+
+      function dismissTutorial() {
+        if (tutorialDone) return;
+        tutorialDone = true;
+        const t = document.getElementById("tutorial");
+        t.style.opacity = "0";
+        t.style.pointerEvents = "none";
+        setTimeout(() => (t.style.display = "none"), 900);
+        document.getElementById("guide").innerHTML = `
+          <div style="margin-bottom:8px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">gesture</div>
+          touch fingers from <strong>both hands</strong><br/>together to change the field
+        `;
+      }
+
+      // ── PARTICLE TEXTURES ─────────────────────────────────
       function makeParticleTexture(kind) {
         const g = new PIXI.Graphics();
-        if (kind === "line") {
-          g.lineStyle(1.5, 0xffffff, 1);
+        if (kind === "line-thin") {
+          g.lineStyle(0.8, 0xffffff, 1);
+          g.moveTo(-4, 0);
+          g.lineTo(4, 0);
+        } else if (kind === "line-mid") {
+          g.lineStyle(1.8, 0xffffff, 1);
           g.moveTo(-3, 0);
           g.lineTo(3, 0);
+        } else if (kind === "line-thick") {
+          g.lineStyle(3.2, 0xffffff, 1);
+          g.moveTo(-2.5, 0);
+          g.lineTo(2.5, 0);
         } else if (kind === "dash") {
           g.lineStyle(1.3, 0xffffff, 1);
           g.moveTo(-1.5, -1.5);
           g.lineTo(1.5, 1.5);
+        } else if (kind === "dot-small") {
+          g.beginFill(0xffffff);
+          g.drawCircle(0, 0, 1.4);
+          g.endFill();
+        } else if (kind === "dot-large") {
+          g.beginFill(0xffffff);
+          g.drawCircle(0, 0, 3.5);
+          g.endFill();
+        } else if (kind === "ring") {
+          g.lineStyle(1.0, 0xffffff, 1);
+          g.drawCircle(0, 0, 2.8);
         } else {
           g.beginFill(0xffffff);
           g.drawCircle(0, 0, 2.2);
@@ -222,6 +378,7 @@
         );
       }
 
+      // ── FIELD RANDOMISATION ───────────────────────────────
       function randomizeField() {
         const gradientCombos = [
           [0.6, 0.85],
@@ -237,28 +394,30 @@
           [0.68, 0.55, 0.92],
           [0.06, 0.92, 0.78],
         ];
-
         const gradientTypes = ["linear", "radial", "diagonal", "bilinear"];
-        const particleKinds = ["dot", "line", "dash"];
-
+        const particleKinds = [
+          "dot-small",
+          "dot-mid",
+          "dot-large",
+          "line-thin",
+          "line-mid",
+          "line-thick",
+          "dash",
+          "ring",
+        ];
         const hues = gradientCombos[Math.floor(rand(0, gradientCombos.length))];
 
         fieldPreset = {
-          // gradient
           hues,
           gradientType:
             gradientTypes[Math.floor(rand(0, gradientTypes.length))],
-          gradientAngle: rand(0, Math.PI * 2), // for linear/diagonal
-          gradientCenterX: rand(0.2, 0.8), // for radial (normalised)
+          gradientAngle: rand(0, Math.PI * 2),
+          gradientCenterX: rand(0.2, 0.8),
           gradientCenterY: rand(0.2, 0.8),
-          gradientCenterX2: rand(0.2, 0.8), // for bilinear second centre
+          gradientCenterX2: rand(0.2, 0.8),
           gradientCenterY2: rand(0.2, 0.8),
-
-          // color ranges
           sat: rand(0.28, 0.48),
-          light: rand(0.52, 0.68), // base brightness, capped below white
-
-          // physics
+          light: rand(0.52, 0.68),
           fieldStrength: rand(0.018, 0.09),
           homePull: rand(0.00025, 0.0012),
           waveScale1: rand(0.001, 0.006),
@@ -272,28 +431,25 @@
           shape: Math.floor(rand(0, 4)),
           particleKind:
             particleKinds[Math.floor(rand(0, particleKinds.length))],
-          sizeBoost: rand(1.15, 1.85),
-          alphaBoost: rand(1.15, 1.65),
+          sizeBoost: rand(1.4, 2.8),
+          alphaBoost: rand(1.3, 2.0),
         };
-
         dotTex = makeParticleTexture(fieldPreset.particleKind);
         initParticles();
       }
 
+      // ── GRADIENT ──────────────────────────────────────────
       function getGradientT(x, y) {
         const fp = fieldPreset;
-        const xn = x / W; // normalised 0-1
-        const yn = y / H;
-
+        const xn = x / W,
+          yn = y / H;
         if (fp.gradientType === "linear") {
-          // project position onto gradient angle direction
           const t =
             xn * Math.cos(fp.gradientAngle) + yn * Math.sin(fp.gradientAngle);
           return clamp((t + 1) * 0.5, 0, 1);
         } else if (fp.gradientType === "radial") {
-          // distance from random centre point
-          const dx = xn - fp.gradientCenterX;
-          const dy = yn - fp.gradientCenterY;
+          const dx = xn - fp.gradientCenterX,
+            dy = yn - fp.gradientCenterY;
           return clamp(Math.sqrt(dx * dx + dy * dy) * 1.6, 0, 1);
         } else if (fp.gradientType === "diagonal") {
           return clamp(xn * 0.5 + yn * 0.5, 0, 1);
@@ -302,30 +458,29 @@
             dy1 = yn - fp.gradientCenterY;
           const dx2 = xn - fp.gradientCenterX2,
             dy2 = yn - fp.gradientCenterY2;
-          const d1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-          const d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          const d1 = Math.sqrt(dx1 * dx1 + dy1 * dy1),
+            d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
           return clamp(d1 / (d1 + d2 + 0.001), 0, 1);
         }
       }
 
       function sampleGradient(t) {
         const hues = fieldPreset.hues;
-        if (hues.length === 2) {
-          return lerp(hues[0], hues[1], t);
-        }
-        if (t < 0.5) {
-          return lerp(hues[0], hues[1], t * 2);
-        }
+        if (hues.length === 2) return lerp(hues[0], hues[1], t);
+        if (t < 0.5) return lerp(hues[0], hues[1], t * 2);
         return lerp(hues[1], hues[2], (t - 0.5) * 2);
       }
 
+      // ── HOME POSITIONS ────────────────────────────────────
       function makeHomePosition(i) {
         const shape = fieldPreset.shape || 0;
         if (shape === 0) {
           const x = rand(W * 0.045, W * 0.955),
             y = rand(H * 0.08, H * 0.92);
-          const pull = Math.random() * 0.18;
-          return { x: lerp(x, W * 0.5, pull), y: lerp(y, H * 0.5, pull) };
+          return {
+            x: lerp(x, W * 0.5, Math.random() * 0.18),
+            y: lerp(y, H * 0.5, Math.random() * 0.18),
+          };
         }
         if (shape === 1) {
           const rows = 80,
@@ -335,8 +490,9 @@
           const xNorm = col / cols,
             yNorm = row / rows;
           const x = lerp(W * 0.05, W * 0.95, xNorm);
-          const wave = Math.sin(xNorm * Math.PI * 5 + yNorm * 10) * 45;
-          const y = lerp(H * 0.2, H * 0.82, yNorm) + wave;
+          const y =
+            lerp(H * 0.2, H * 0.82, yNorm) +
+            Math.sin(xNorm * Math.PI * 5 + yNorm * 10) * 45;
           return { x: x + rand(-2, 2), y: y + rand(-2, 2) };
         }
         if (shape === 2) {
@@ -349,8 +505,9 @@
         }
         const band = Math.floor(rand(0, 5));
         const x = rand(W * 0.04, W * 0.96);
-        const yBase = H * (0.2 + band * 0.14);
-        const y = yBase + Math.sin(x * 0.006 + band * 2.1) * rand(22, 70);
+        const y =
+          H * (0.2 + band * 0.14) +
+          Math.sin(x * 0.006 + band * 2.1) * rand(22, 70);
         return { x: x + rand(-3, 3), y: y + rand(-6, 6) };
       }
 
@@ -366,10 +523,10 @@
           sprite.blendMode = PIXI.BLEND_MODES.ADD;
           const depth = Math.random();
           const baseSize =
-            lerp(0.1, 0.48, Math.pow(depth, 1.9)) * fieldPreset.sizeBoost;
+            lerp(0.18, 0.72, Math.pow(depth, 1.6)) * fieldPreset.sizeBoost;
           sprite.scale.set(baseSize);
-          sprite.alpha = lerp(0.16, 0.55, depth) * fieldPreset.alphaBoost;
-          const p = {
+          sprite.alpha = lerp(0.28, 0.75, depth) * fieldPreset.alphaBoost;
+          particles.push({
             sprite,
             x: home.x + rand(-5, 5),
             y: home.y + rand(-5, 5),
@@ -382,12 +539,12 @@
             baseSize,
             energy: 0,
             warmth: Math.random(),
-          };
-          particles.push(p);
+          });
           fieldLayer.addChild(sprite);
         }
       }
 
+      // ── FLOW FIELD ────────────────────────────────────────
       function flowAngle(x, y, time, seed) {
         const s1 = fieldPreset.waveScale1,
           s2 = fieldPreset.waveScale2;
@@ -422,11 +579,11 @@
         lastHandsState = handsState;
         handsState = rawHands.map((hand, index) => {
           const center = getHandCenter(hand);
-          const x = (center.x / vid.videoWidth) * W;
-          const y = (center.y / vid.videoHeight) * H;
+          const x = (center.x / vid.videoWidth) * W,
+            y = (center.y / vid.videoHeight) * H;
           const prev = lastHandsState[index];
-          const vx = prev ? x - prev.x : 0;
-          const vy = prev ? y - prev.y : 0;
+          const vx = prev ? x - prev.x : 0,
+            vy = prev ? y - prev.y : 0;
           return {
             x,
             y,
@@ -447,6 +604,9 @@
 
       function checkFingerTouchGesture() {
         if (handsState.length < 2) return;
+        const hasLeft = handsState.some((h) => h.role === "left");
+        const hasRight = handsState.some((h) => h.role === "right");
+        if (!hasLeft || !hasRight) return;
         const fingerIds = [4, 8, 12, 16, 20];
         const now = performance.now();
         for (let i = 0; i < handsState.length; i++) {
@@ -494,7 +654,7 @@
             const dx = p.x - tip.x,
               dy = p.y - tip.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const radius = 92 + clamp(tipSpeed * 2.0, 0, 110);
+            const radius = 30 + clamp(tipSpeed * 8.5, 0, 170);
             const influence = Math.pow(clamp(1 - dist / radius, 0, 1), 1.8);
             if (influence <= 0) continue;
             const nx = dx / dist,
@@ -583,27 +743,23 @@
           const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
           const energy = clamp(p.energy, 0, 1.5);
           const flowColor = flowColorValue(p.x, p.y, time, p.seed);
-
           const baseT = getGradientT(p.x, p.y);
           const activity = clamp(energy * 0.4 + speed * 0.3, 0, 0.35);
           const t = clamp(baseT + activity, 0, 1);
           const hue = sampleGradient(t);
-
           const sat = lerp(
             fieldPreset.sat * 0.75,
             fieldPreset.sat,
             clamp(energy * 0.7 + Math.abs(flowColor) * 0.3, 0, 1),
           );
-
           const light = Math.min(
             lerp(
               fieldPreset.light * 0.85,
               fieldPreset.light + 0.06,
               clamp(energy * 0.6 + speed * 0.2, 0, 1),
             ),
-            0.67,
+            0.74,
           );
-
           p.sprite.tint = hslToInt(hue, sat, light);
           p.sprite.x = p.x;
           p.sprite.y = p.y;
@@ -612,12 +768,12 @@
             0.18,
             0.94,
           );
-
           const scale =
             p.baseSize + energy * 0.42 + clamp(speed * 0.026, 0, 0.32);
           if (
-            fieldPreset.particleKind === "line" ||
-            fieldPreset.particleKind === "dash"
+            ["line-thin", "line-mid", "line-thick", "dash"].includes(
+              fieldPreset.particleKind,
+            )
           ) {
             p.sprite.scale.set(scale * 1.8, scale * 0.55);
             p.sprite.rotation = Math.atan2(p.vy, p.vx);
@@ -627,18 +783,55 @@
         }
       }
 
+      let _lastSeenTrigger = 0;
       app.ticker.add(() => {
         const time = performance.now();
         renderParticles(time);
         drawConnections();
         drawHandOverlay();
+        // tutorial auto-advance
+        const _tnow = performance.now();
+        if (!tutorialDone && tutorialStep === 2 && handsState.length >= 1) {
+          if (!window._t2) window._t2 = _tnow;
+          else if (_tnow - window._t2 > 1500) {
+            window._t2 = 0;
+            setTutorialStep(3);
+          }
+        } else {
+          window._t2 = 0;
+        }
+
+        if (
+          !tutorialDone &&
+          tutorialStep === 3 &&
+          handsState.some((h) => h.role === "left") &&
+          handsState.some((h) => h.role === "right")
+        ) {
+          if (!window._t3) window._t3 = _tnow;
+          else if (_tnow - window._t3 > 2400) {
+            window._t3 = 0;
+            setTutorialStep(4);
+          }
+        } else {
+          window._t3 = 0;
+        }
+        if (
+          !tutorialDone &&
+          tutorialStep === 4 &&
+          lastGestureTrigger !== _lastSeenTrigger &&
+          lastGestureTrigger > 0
+        ) {
+          _lastSeenTrigger = lastGestureTrigger;
+          dismissTutorial();
+        }
       });
 
       async function startCam() {
         const btn = document.getElementById("start-btn");
         const status = document.getElementById("status");
-        btn.textContent = "loading";
+        btn.textContent = "loading...";
         btn.disabled = true;
+        setTutorialStep(1);
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             video: { width: 640, height: 480, facingMode: "user" },
@@ -646,7 +839,7 @@
           vid.srcObject = stream;
           await new Promise((resolve) => (vid.onloadedmetadata = resolve));
           vid.play();
-          status.textContent = "loading hand model";
+          status.textContent = "loading hand model — this takes ~10s";
           await tf.setBackend("webgl");
           await tf.ready();
           detector = await handPoseDetection.createDetector(
@@ -658,36 +851,16 @@
               maxHands: 2,
             },
           );
-          status.textContent = "the field is listening";
+          status.textContent = "ready";
+          setTutorialStep(2);
           btn.classList.add("hidden");
           detectLoop();
         } catch (e) {
           console.error(e);
-          status.textContent = "camera failed — using mouse";
-          btn.textContent = "failed";
+          status.textContent =
+            "camera required — please allow camera access and refresh";
+          btn.textContent = "retry";
           btn.disabled = false;
-          document.addEventListener("mousemove", (e) => {
-            const prev = handsState[0];
-            handsState = [
-              {
-                x: e.clientX,
-                y: e.clientY,
-                vx: prev ? e.clientX - prev.x : 0,
-                vy: prev ? e.clientY - prev.y : 0,
-                speed: prev
-                  ? Math.hypot(e.clientX - prev.x, e.clientY - prev.y)
-                  : 0,
-                role: e.clientX < W / 2 ? "left" : "right",
-                keypoints: Array.from({ length: 21 }, () => ({
-                  x: e.clientX,
-                  y: e.clientY,
-                })),
-                prevKeypoints: prev
-                  ? Array.from({ length: 21 }, () => ({ x: prev.x, y: prev.y }))
-                  : null,
-              },
-            ];
-          });
         }
       }
 
