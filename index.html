@@ -178,18 +178,31 @@
       let lastHandsState = [];
 
       const particles = [];
-      const N = 3600;
+      const N = 4800;
 
       let fieldPreset = {};
       let lastGestureTrigger = 0;
+      let dotTex = null;
 
-      const dotTex = (() => {
+      function makeParticleTexture(kind) {
         const g = new PIXI.Graphics();
-        g.beginFill(0xffffff);
-        g.drawCircle(0, 0, 2);
-        g.endFill();
+
+        if (kind === "line") {
+          g.lineStyle(1.5, 0xffffff, 1);
+          g.moveTo(-3, 0);
+          g.lineTo(3, 0);
+        } else if (kind === "dash") {
+          g.lineStyle(1.3, 0xffffff, 1);
+          g.moveTo(-1.5, -1.5);
+          g.lineTo(1.5, 1.5);
+        } else {
+          g.beginFill(0xffffff);
+          g.drawCircle(0, 0, 2.2);
+          g.endFill();
+        }
+
         return app.renderer.generateTexture(g);
-      })();
+      }
 
       function rand(min, max) {
         return min + Math.random() * (max - min);
@@ -231,12 +244,23 @@
       }
 
       function randomizeField() {
+        const paletteFamilies = [
+          [0.06, 0.1, 0.14],
+          [0.78, 0.84, 0.91],
+          [0.52, 0.58, 0.64],
+          [0.9, 0.96, 0.03],
+          [0.68, 0.73, 0.79],
+          [0.02, 0.07, 0.12],
+        ];
+
+        const palette =
+          paletteFamilies[Math.floor(rand(0, paletteFamilies.length))];
+        const particleKinds = ["dot", "line", "dash"];
+
         fieldPreset = {
-          hueA: Math.random(),
-          hueB: Math.random(),
-          activeHue: Math.random(),
-          sat: rand(0.28, 0.78),
-          light: rand(0.68, 0.92),
+          palette,
+          sat: rand(0.22, 0.48),
+          light: rand(0.72, 0.9),
           fieldStrength: rand(0.018, 0.09),
           homePull: rand(0.00025, 0.0012),
           waveScale1: rand(0.001, 0.006),
@@ -248,7 +272,13 @@
           scatterStrength: rand(2.0, 7.0),
           rippleStrength: rand(0.02, 0.09),
           shape: Math.floor(rand(0, 4)),
+          particleKind:
+            particleKinds[Math.floor(rand(0, particleKinds.length))],
+          sizeBoost: rand(1.15, 1.85),
+          alphaBoost: rand(1.15, 1.65),
         };
+
+        dotTex = makeParticleTexture(fieldPreset.particleKind);
         initParticles();
       }
 
@@ -304,10 +334,11 @@
           sprite.blendMode = PIXI.BLEND_MODES.ADD;
 
           const depth = Math.random();
-          const baseSize = lerp(0.08, 0.36, Math.pow(depth, 1.9));
+          const baseSize =
+            lerp(0.1, 0.48, Math.pow(depth, 1.9)) * fieldPreset.sizeBoost;
 
           sprite.scale.set(baseSize);
-          sprite.alpha = lerp(0.09, 0.38, depth);
+          sprite.alpha = lerp(0.16, 0.55, depth) * fieldPreset.alphaBoost;
 
           const p = {
             sprite,
@@ -557,22 +588,24 @@
           const energy = clamp(p.energy, 0, 1.5);
           const flowColor = flowColorValue(p.x, p.y, time, p.seed);
 
-          const baseHue = lerp(
-            fieldPreset.hueA,
-            fieldPreset.hueB,
-            (flowColor + 1) * 0.5,
+          const palette = fieldPreset.palette;
+          const colorPos = clamp(
+            (flowColor + 1) * 0.5 + energy * 0.45 + speed * 0.08,
+            0,
+            0.999,
           );
-          const hue = lerp(baseHue, fieldPreset.activeHue, energy * 0.35);
+          const colorIndex = Math.floor(colorPos * palette.length);
+          const hue = palette[colorIndex];
           const sat = lerp(
             0.18,
             fieldPreset.sat,
-            energy + Math.abs(flowColor) * 0.22,
+            clamp(energy + Math.abs(flowColor) * 0.28, 0, 1),
           );
           const light = lerp(
-            fieldPreset.light * 0.8,
-            0.98,
+            fieldPreset.light,
+            0.96,
             clamp(
-              energy * 0.75 + speed * 0.15 + Math.abs(flowColor) * 0.16,
+              energy * 0.65 + speed * 0.18 + Math.abs(flowColor) * 0.18,
               0,
               1,
             ),
@@ -582,14 +615,23 @@
           p.sprite.x = p.x;
           p.sprite.y = p.y;
           p.sprite.alpha = clamp(
-            0.12 + p.depth * 0.22 + energy * 0.34 + speed * 0.018,
-            0.1,
-            0.86,
+            0.2 + p.depth * 0.3 + energy * 0.38 + speed * 0.02,
+            0.18,
+            0.94,
           );
 
-          p.sprite.scale.set(
-            p.baseSize + energy * 0.36 + clamp(speed * 0.022, 0, 0.26),
-          );
+          const scale =
+            p.baseSize + energy * 0.42 + clamp(speed * 0.026, 0, 0.32);
+
+          if (
+            fieldPreset.particleKind === "line" ||
+            fieldPreset.particleKind === "dash"
+          ) {
+            p.sprite.scale.set(scale * 1.8, scale * 0.55);
+            p.sprite.rotation = Math.atan2(p.vy, p.vx);
+          } else {
+            p.sprite.scale.set(scale);
+          }
         }
       }
 
