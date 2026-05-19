@@ -783,17 +783,26 @@
         }
 
         if (shape === 7) {
-          const numClusters = 5;
-          const clusterIndex = i % numClusters;
-          const angle = (clusterIndex / numClusters) * Math.PI * 2;
-          const centerRadius = Math.min(W, H) * 0.25;
+          // random cluster centers
+          if (!fieldPreset.clusterCenters) {
+            const numClusters = Math.floor(rand(3, 8));
 
-          const cx = W * 0.5 + Math.cos(angle) * centerRadius;
-          const cy = H * 0.5 + Math.sin(angle) * centerRadius * 0.7;
+            fieldPreset.clusterCenters = Array.from(
+              { length: numClusters },
+              () => ({
+                x: rand(W * 0.15, W * 0.85),
+                y: rand(H * 0.15, H * 0.85),
+              }),
+            );
+          }
+
+          const centers = fieldPreset.clusterCenters;
+
+          const c = centers[Math.floor(rand(0, centers.length))];
 
           return {
-            x: cx + rand(-80, 80),
-            y: cy + rand(-80, 80),
+            x: c.x + rand(-90, 90),
+            y: c.y + rand(-90, 90),
           };
         }
 
