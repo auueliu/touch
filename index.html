@@ -151,6 +151,15 @@
         color: rgba(255, 255, 255, 0.5);
         line-height: 1.8;
       }
+      #tutorial-title.final {
+        font-size: 28px;
+        letter-spacing: 0.1em;
+      }
+      #tutorial-sub.final {
+        font-size: 18px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
       #tutorial-anim {
         margin-top: 30px;
         height: 120px;
@@ -333,6 +342,7 @@
           <div class="prog-dot"></div>
           <div class="prog-dot"></div>
           <div class="prog-dot"></div>
+          <div class="prog-dot"></div>
         </div>
         <button
           id="start-btn"
@@ -412,6 +422,7 @@
           title: "touch fingertips together like a pyramid",
           sub: "to change the field",
         },
+        { num: "", title: "the field is yours", sub: "explore" },
       ];
       let tutorialStep = 0;
       let tutorialDone = false;
@@ -430,6 +441,11 @@
         document
           .querySelectorAll(".prog-dot")
           .forEach((d, idx) => d.classList.toggle("active", idx === i));
+
+        const titleEl = document.getElementById("tutorial-title");
+        const subEl = document.getElementById("tutorial-sub");
+        titleEl.classList.toggle("final", i === 5);
+        subEl.classList.toggle("final", i === 5);
         if (i === 2) startHandAnim("left");
         else if (i === 3) startHandAnim("both");
         else if (i === 4) startHandAnim("pyramid");
@@ -452,12 +468,16 @@
 
       function dismissTutorial() {
         if (tutorialDone) return;
+        stopHandAnim();
+        setTutorialStep(5); // show "the field is yours"
         tutorialDone = true;
         const t = document.getElementById("tutorial");
-        t.style.opacity = "0";
-        t.style.pointerEvents = "none";
-        stopHandAnim();
-        setTimeout(() => (t.style.display = "none"), 900);
+        setTimeout(() => {
+          t.style.transition = "opacity 3.2s ease";
+          t.style.opacity = "0";
+          t.style.pointerEvents = "none";
+          setTimeout(() => (t.style.display = "none"), 1400);
+        }, 2900);
         document.getElementById("guide").innerHTML = `
           <div style="margin-bottom:8px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">gesture</div>
           touch fingertips from <strong>both hands</strong><br/> to change the field
