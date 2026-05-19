@@ -13,4 +13,5 @@ A browser-based interactive particle field driven by hand gestures.
 ## notes
 
 - Camera access is required. The piece does not work without it.
-- Works best on a laptop or desktop with a front-facing camera.
+- Works best on a laptop or desktop.
+- All camera processing happens locally in your browser. No video, image, or hand tracking data is ever stored, transmitted, or sent to any server. ^-^
