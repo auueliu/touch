@@ -82,7 +82,7 @@
         font-weight: 400;
       }
       #start-btn {
-        padding: 12px 32px;
+        padding: 11px 28px;
         font-size: 11px;
         letter-spacing: 0.18em;
         color: rgba(255, 255, 255, 0.75);
@@ -105,7 +105,6 @@
         opacity: 0;
         pointer-events: none;
       }
-
       #tutorial {
         position: absolute;
         inset: 0;
@@ -116,9 +115,6 @@
         justify-content: center;
         pointer-events: none;
         transition: opacity 0.8s ease;
-      }
-      #tutorial.hidden {
-        opacity: 0;
       }
       #tutorial-step {
         text-align: center;
@@ -155,6 +151,14 @@
         color: rgba(255, 255, 255, 0.5);
         line-height: 1.8;
       }
+      #tutorial-anim {
+        margin-top: 30px;
+        height: 120px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+      }
       #tutorial-progress {
         display: flex;
         gap: 6px;
@@ -170,6 +174,44 @@
       .prog-dot.active {
         background: rgba(255, 255, 255, 0.75);
       }
+
+      #anim-single,
+      #anim-both,
+      #anim-pyramid {
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      @keyframes floatHand {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-7px);
+        }
+      }
+      @keyframes touchPulse {
+        0%,
+        100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 0.9;
+        }
+      }
+      #anim-single svg {
+        animation: floatHand 2.2s ease-in-out infinite;
+      }
+      #anim-both svg {
+        animation: floatHand 2.4s ease-in-out infinite;
+      }
+      #anim-both svg:nth-child(2) {
+        animation-delay: 0.3s;
+      }
+      #anim-pyramid svg {
+        animation: touchPulse 1.8s ease-in-out infinite;
+      }
     </style>
   </head>
   <body>
@@ -181,9 +223,109 @@
       <div id="guide"></div>
       <div id="tutorial">
         <div id="tutorial-step">
-          <div id="tutorial-number">step1 of 5</div>
+          <div id="tutorial-number">step 1 of 5</div>
           <div id="tutorial-title">press start</div>
-          <div id="tutorial-sub">then allow camera access<br /></div>
+          <div id="tutorial-sub">then allow camera access</div>
+          <div id="tutorial-anim">
+            <div id="anim-single">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="72"
+                height="72"
+                fill="none"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="16"
+                opacity="0.55"
+              >
+                <path d="M96.65,62a20,20,0,0,1,34.64-20l30,52" />
+                <path d="M69.32,94.67,55.08,70A20,20,0,0,1,89.73,50l31.17,54" />
+                <path
+                  d="M158.87,160A40,40,0,0,1,168,105.58L161.32,94A20,20,0,0,1,196,74l17.31,30A80,80,0,0,1,74.7,184l-40-69.32a20,20,0,0,1,34.64-20L88.57,128"
+                />
+                <path d="M192,33.78A51.84,51.84,0,0,1,223.67,58l.33.57" />
+                <path d="M74.62,232A111.88,111.88,0,0,1,47,200" />
+              </svg>
+            </div>
+
+            <div id="anim-both">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="72"
+                height="72"
+                fill="none"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="16"
+                opacity="0.55"
+              >
+                <path d="M96.65,62a20,20,0,0,1,34.64-20l30,52" />
+                <path d="M69.32,94.67,55.08,70A20,20,0,0,1,89.73,50l31.17,54" />
+                <path
+                  d="M158.87,160A40,40,0,0,1,168,105.58L161.32,94A20,20,0,0,1,196,74l17.31,30A80,80,0,0,1,74.7,184l-40-69.32a20,20,0,0,1,34.64-20L88.57,128"
+                />
+                <path d="M192,33.78A51.84,51.84,0,0,1,223.67,58l.33.57" />
+                <path d="M74.62,232A111.88,111.88,0,0,1,47,200" />
+              </svg>
+              <!-- wrap in div so transform works correctly on the svg -->
+              <div style="transform: scaleX(-1); display: inline-flex">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 256 256"
+                  width="72"
+                  height="72"
+                  fill="none"
+                  stroke="white"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="16"
+                  opacity="0.55"
+                >
+                  <path d="M96.65,62a20,20,0,0,1,34.64-20l30,52" />
+                  <path
+                    d="M69.32,94.67,55.08,70A20,20,0,0,1,89.73,50l31.17,54"
+                  />
+                  <path
+                    d="M158.87,160A40,40,0,0,1,168,105.58L161.32,94A20,20,0,0,1,196,74l17.31,30A80,80,0,0,1,74.7,184l-40-69.32a20,20,0,0,1,34.64-20L88.57,128"
+                  />
+                  <path d="M192,33.78A51.84,51.84,0,0,1,223.67,58l.33.57" />
+                  <path d="M74.62,232A111.88,111.88,0,0,1,47,200" />
+                </svg>
+              </div>
+            </div>
+
+            <div id="anim-pyramid">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="80"
+                height="80"
+                fill="none"
+                stroke="white"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="16"
+                opacity="0.55"
+              >
+                <path
+                  d="M141.78,16h0A13.77,13.77,0,0,1,155,25.78L192,148l20.27,20.27-45,43-29.94-29.94A32,32,0,0,1,128,158.75v-129A13.78,13.78,0,0,1,141.78,16Z"
+                />
+                <path
+                  d="M167.31,211.31l18.35,18.35a8,8,0,0,0,11.31,0L229.66,197a8,8,0,0,0,0-11.31l-18.35-18.35"
+                />
+                <path
+                  d="M118.63,181.37,88.69,211.31l-44-44L64,148,101,25.78A13.77,13.77,0,0,1,114.22,16h0A13.78,13.78,0,0,1,128,29.78v129A32,32,0,0,1,118.63,181.37Z"
+                />
+                <path
+                  d="M44.69,167.31,26.34,185.66a8,8,0,0,0,0,11.31L59,229.66a8,8,0,0,0,11.31,0l18.35-18.35"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
         <div id="tutorial-progress">
           <div class="prog-dot active"></div>
@@ -267,7 +409,7 @@
         },
         {
           num: "step 5 of 5",
-          title: "touch your left & right fingertips together",
+          title: "touch fingertips together like a pyramid",
           sub: "to change the field",
         },
       ];
@@ -283,11 +425,29 @@
         document.getElementById("tutorial-sub").innerHTML = s.sub;
         const el = document.getElementById("tutorial-step");
         el.style.animation = "none";
-        el.offsetHeight; // reflow to restart animation
+        el.offsetHeight;
         el.style.animation = "stepIn 1.5s ease";
-        document.querySelectorAll(".prog-dot").forEach((d, idx) => {
-          d.classList.toggle("active", idx === i);
-        });
+        document
+          .querySelectorAll(".prog-dot")
+          .forEach((d, idx) => d.classList.toggle("active", idx === i));
+        if (i === 2) startHandAnim("left");
+        else if (i === 3) startHandAnim("both");
+        else if (i === 4) startHandAnim("pyramid");
+        else stopHandAnim();
+      }
+
+      function startHandAnim(mode) {
+        document.getElementById("tutorial-anim").style.display = "flex";
+        document.getElementById("anim-single").style.display =
+          mode === "left" ? "flex" : "none";
+        document.getElementById("anim-both").style.display =
+          mode === "both" ? "flex" : "none";
+        document.getElementById("anim-pyramid").style.display =
+          mode === "pyramid" ? "flex" : "none";
+      }
+
+      function stopHandAnim() {
+        document.getElementById("tutorial-anim").style.display = "none";
       }
 
       function dismissTutorial() {
@@ -296,14 +456,14 @@
         const t = document.getElementById("tutorial");
         t.style.opacity = "0";
         t.style.pointerEvents = "none";
+        stopHandAnim();
         setTimeout(() => (t.style.display = "none"), 900);
         document.getElementById("guide").innerHTML = `
           <div style="margin-bottom:8px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">gesture</div>
-          touch fingers from <strong>both hands</strong><br/>together to change the field
+          touch fingertips from <strong>both hands</strong><br/> to change the field
         `;
       }
 
-      // ── PARTICLE TEXTURES ─────────────────────────────────
       function makeParticleTexture(kind) {
         const g = new PIXI.Graphics();
         if (kind === "line-thin") {
@@ -365,8 +525,8 @@
             if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
             return p;
           };
-          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          const p = 2 * l - q;
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s,
+            p = 2 * l - q;
           r = hue2rgb(p, q, h + 1 / 3);
           g = hue2rgb(p, q, h);
           b = hue2rgb(p, q, h - 1 / 3);
@@ -378,7 +538,6 @@
         );
       }
 
-      // ── FIELD RANDOMISATION ───────────────────────────────
       function randomizeField() {
         const gradientCombos = [
           [0.6, 0.85],
@@ -406,7 +565,6 @@
           "ring",
         ];
         const hues = gradientCombos[Math.floor(rand(0, gradientCombos.length))];
-
         fieldPreset = {
           hues,
           gradientType:
@@ -438,15 +596,19 @@
         initParticles();
       }
 
-      // ── GRADIENT ──────────────────────────────────────────
       function getGradientT(x, y) {
-        const fp = fieldPreset;
-        const xn = x / W,
+        const fp = fieldPreset,
+          xn = x / W,
           yn = y / H;
         if (fp.gradientType === "linear") {
-          const t =
-            xn * Math.cos(fp.gradientAngle) + yn * Math.sin(fp.gradientAngle);
-          return clamp((t + 1) * 0.5, 0, 1);
+          return clamp(
+            (xn * Math.cos(fp.gradientAngle) +
+              yn * Math.sin(fp.gradientAngle) +
+              1) *
+              0.5,
+            0,
+            1,
+          );
         } else if (fp.gradientType === "radial") {
           const dx = xn - fp.gradientCenterX,
             dy = yn - fp.gradientCenterY;
@@ -465,13 +627,12 @@
       }
 
       function sampleGradient(t) {
-        const hues = fieldPreset.hues;
-        if (hues.length === 2) return lerp(hues[0], hues[1], t);
-        if (t < 0.5) return lerp(hues[0], hues[1], t * 2);
-        return lerp(hues[1], hues[2], (t - 0.5) * 2);
+        const h = fieldPreset.hues;
+        if (h.length === 2) return lerp(h[0], h[1], t);
+        if (t < 0.5) return lerp(h[0], h[1], t * 2);
+        return lerp(h[1], h[2], (t - 0.5) * 2);
       }
 
-      // ── HOME POSITIONS ────────────────────────────────────
       function makeHomePosition(i) {
         const shape = fieldPreset.shape || 0;
         if (shape === 0) {
@@ -484,31 +645,36 @@
         }
         if (shape === 1) {
           const rows = 80,
-            cols = Math.ceil(N / rows);
-          const row = i % rows,
+            cols = Math.ceil(N / rows),
+            row = i % rows,
             col = Math.floor(i / rows);
           const xNorm = col / cols,
             yNorm = row / rows;
-          const x = lerp(W * 0.05, W * 0.95, xNorm);
-          const y =
-            lerp(H * 0.2, H * 0.82, yNorm) +
-            Math.sin(xNorm * Math.PI * 5 + yNorm * 10) * 45;
-          return { x: x + rand(-2, 2), y: y + rand(-2, 2) };
+          return {
+            x: lerp(W * 0.05, W * 0.95, xNorm) + rand(-2, 2),
+            y:
+              lerp(H * 0.2, H * 0.82, yNorm) +
+              Math.sin(xNorm * Math.PI * 5 + yNorm * 10) * 45 +
+              rand(-2, 2),
+          };
         }
         if (shape === 2) {
-          const angle = rand(0, Math.PI * 2);
-          const radius = Math.sqrt(Math.random()) * Math.min(W, H) * 0.38;
+          const angle = rand(0, Math.PI * 2),
+            radius = Math.sqrt(Math.random()) * Math.min(W, H) * 0.38;
           return {
             x: W * 0.5 + Math.cos(angle) * radius + rand(-4, 4),
             y: H * 0.5 + Math.sin(angle) * radius * 0.72 + rand(-4, 4),
           };
         }
-        const band = Math.floor(rand(0, 5));
-        const x = rand(W * 0.04, W * 0.96);
-        const y =
-          H * (0.2 + band * 0.14) +
-          Math.sin(x * 0.006 + band * 2.1) * rand(22, 70);
-        return { x: x + rand(-3, 3), y: y + rand(-6, 6) };
+        const band = Math.floor(rand(0, 5)),
+          x = rand(W * 0.04, W * 0.96);
+        return {
+          x: x + rand(-3, 3),
+          y:
+            H * (0.2 + band * 0.14) +
+            Math.sin(x * 0.006 + band * 2.1) * rand(22, 70) +
+            rand(-6, 6),
+        };
       }
 
       function initParticles() {
@@ -544,7 +710,6 @@
         }
       }
 
-      // ── FLOW FIELD ────────────────────────────────────────
       function flowAngle(x, y, time, seed) {
         const s1 = fieldPreset.waveScale1,
           s2 = fieldPreset.waveScale2;
@@ -613,7 +778,7 @@
           for (let j = i + 1; j < handsState.length; j++) {
             const handA = handsState[i],
               handB = handsState[j];
-            for (const idA of fingerIds) {
+            for (const idA of fingerIds)
               for (const idB of fingerIds) {
                 const a = handA.keypoints[idA],
                   b = handB.keypoints[idB];
@@ -624,7 +789,6 @@
                   return;
                 }
               }
-            }
           }
         }
       }
@@ -641,11 +805,10 @@
         p.vx += (p.homeX - p.x) * fieldPreset.homePull;
         p.vy += (p.homeY - p.y) * fieldPreset.homePull;
         p.energy *= 0.925;
-
         for (const hand of handsState) {
           for (const id of [4, 8, 12, 16, 20]) {
-            const tip = hand.keypoints[id];
-            const prevTip = hand.prevKeypoints ? hand.prevKeypoints[id] : null;
+            const tip = hand.keypoints[id],
+              prevTip = hand.prevKeypoints ? hand.prevKeypoints[id] : null;
             if (!tip || !prevTip) continue;
             const tvx = tip.x - prevTip.x,
               tvy = tip.y - prevTip.y;
@@ -675,11 +838,10 @@
             p.energy += influence * clamp(tipSpeed * 0.028, 0.03, 1.1);
           }
         }
-
         p.vx *= 0.982;
         p.vy *= 0.982;
-        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        const maxSpeed = 1.25 + p.energy * 0.9;
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy),
+          maxSpeed = 1.25 + p.energy * 0.9;
         if (speed > maxSpeed) {
           p.vx = (p.vx / speed) * maxSpeed;
           p.vy = (p.vy / speed) * maxSpeed;
@@ -717,14 +879,14 @@
             j < Math.min(i + 140, particles.length);
             j += 11
           ) {
-            const b = particles[j];
-            const dx = a.x - b.x,
+            const b = particles[j],
+              dx = a.x - b.x,
               dy = a.y - b.y,
               d2 = dx * dx + dy * dy,
               maxD = 36;
             if (d2 < maxD * maxD) {
-              const d = Math.sqrt(d2);
-              const alpha = (1 - d / maxD) * 0.08 * (a.energy + b.energy);
+              const alpha =
+                (1 - Math.sqrt(d2) / maxD) * 0.08 * (a.energy + b.energy);
               lineLayer.lineStyle(
                 0.65,
                 hslToInt(0.6, 0.26, 0.76),
@@ -740,12 +902,14 @@
       function renderParticles(time) {
         for (const p of particles) {
           applyField(p, time);
-          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-          const energy = clamp(p.energy, 0, 1.5);
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy),
+            energy = clamp(p.energy, 0, 1.5);
           const flowColor = flowColorValue(p.x, p.y, time, p.seed);
-          const baseT = getGradientT(p.x, p.y);
-          const activity = clamp(energy * 0.4 + speed * 0.3, 0, 0.35);
-          const t = clamp(baseT + activity, 0, 1);
+          const t = clamp(
+            getGradientT(p.x, p.y) + clamp(energy * 0.4 + speed * 0.3, 0, 0.35),
+            0,
+            1,
+          );
           const hue = sampleGradient(t);
           const sat = lerp(
             fieldPreset.sat * 0.75,
@@ -789,18 +953,16 @@
         renderParticles(time);
         drawConnections();
         drawHandOverlay();
-        // tutorial auto-advance
         const _tnow = performance.now();
         if (!tutorialDone && tutorialStep === 2 && handsState.length >= 1) {
           if (!window._t2) window._t2 = _tnow;
-          else if (_tnow - window._t2 > 1500) {
+          else if (_tnow - window._t2 > 2000) {
             window._t2 = 0;
             setTutorialStep(3);
           }
         } else {
           window._t2 = 0;
         }
-
         if (
           !tutorialDone &&
           tutorialStep === 3 &&
@@ -808,7 +970,7 @@
           handsState.some((h) => h.role === "right")
         ) {
           if (!window._t3) window._t3 = _tnow;
-          else if (_tnow - window._t3 > 2400) {
+          else if (_tnow - window._t3 > 2000) {
             window._t3 = 0;
             setTutorialStep(4);
           }
@@ -827,8 +989,8 @@
       });
 
       async function startCam() {
-        const btn = document.getElementById("start-btn");
-        const status = document.getElementById("status");
+        const btn = document.getElementById("start-btn"),
+          status = document.getElementById("status");
         btn.textContent = "loading...";
         btn.disabled = true;
         setTutorialStep(1);
@@ -839,7 +1001,6 @@
           vid.srcObject = stream;
           await new Promise((resolve) => (vid.onloadedmetadata = resolve));
           vid.play();
-          status.textContent = "loading hand model — this takes ~10s";
           await tf.setBackend("webgl");
           await tf.ready();
           detector = await handPoseDetection.createDetector(
@@ -851,7 +1012,6 @@
               maxHands: 2,
             },
           );
-          status.textContent = "ready";
           setTutorialStep(2);
           btn.classList.add("hidden");
           detectLoop();
