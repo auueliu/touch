@@ -221,6 +221,29 @@
       #anim-pyramid svg {
         animation: touchPulse 1.8s ease-in-out infinite;
       }
+      #fullscreen-btn {
+        position: absolute;
+        right: 24px;
+        bottom: 24px;
+        z-index: 10;
+        width: 36px;
+        height: 36px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        opacity: 0.45;
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #fullscreen-btn:hover {
+        opacity: 0.85;
+        transform: scale(1.12);
+      }
     </style>
   </head>
   <body>
@@ -352,6 +375,28 @@
           start
         </button>
       </div>
+      <button
+        id="fullscreen-btn"
+        onclick="toggleFullscreen()"
+        title="fullscreen"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 256 256"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="white"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="16"
+        >
+          <polyline points="168 48 208 48 208 88" />
+          <polyline points="88 208 48 208 48 168" />
+          <polyline points="208 168 208 208 168 208" />
+          <polyline points="48 88 48 48 88 48" />
+        </svg>
+      </button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
@@ -556,6 +601,14 @@
           (Math.round(g * 255) << 8) |
           Math.round(b * 255)
         );
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
       }
 
       function randomizeField() {
@@ -1166,6 +1219,7 @@
           );
           setTutorialStep(2);
           btn.classList.add("hidden");
+          document.documentElement.requestFullscreen();
           detectLoop();
         } catch (e) {
           console.error(e);
@@ -1191,12 +1245,27 @@
       }
 
       window.addEventListener("resize", () => {
+        const oldW = W;
+        const oldH = H;
+
         W = window.innerWidth;
         H = window.innerHeight;
+
+        const sx = W / oldW;
+        const sy = H / oldH;
+
         app.renderer.resize(W, H);
+
         handCanvas.width = W;
         handCanvas.height = H;
-        randomizeField();
+
+        for (const p of particles) {
+          p.x *= sx;
+          p.y *= sy;
+
+          p.homeX *= sx;
+          p.homeY *= sy;
+        }
       });
 
       randomizeField();
