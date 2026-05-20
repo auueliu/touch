@@ -2,12 +2,12 @@
 
 A browser-based interactive particle field driven by hand gestures.
 
-🔗 [auueliu.github.io/touch](https://auueliu.github.io/touch/)
+🔗 [touchfield.space](https://touchfield.space/)
 
 ## interaction
 
 - **raise one hand** — particles respond to your fingertip movements
-- **raise both hands** — two sets of force points active simultaneously  
+- **raise both hands** — two sets of force points active simultaneously
 - **touch fingertips together** (left + right hand) — generates a new field
 
 ## notes
