@@ -375,7 +375,13 @@
         </div>
         <button
           id="start-btn"
-          onclick="startCam()"
+          onclick="
+            startCam();
+            document
+              .getElementById('bgm')
+              .play()
+              .catch(() => {});
+          "
           style="margin-top: 32px; pointer-events: all"
         >
           start
