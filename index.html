@@ -68,7 +68,7 @@
       #guide {
         position: absolute;
         left: 32px;
-        bottom: 32px;
+        bottom: max(32px, env(safe-area-inset-bottom) + 16px);
         max-width: 320px;
         color: rgba(255, 255, 255, 0.4);
         font-size: 10px;
@@ -224,7 +224,7 @@
       #fullscreen-btn {
         position: absolute;
         right: 24px;
-        bottom: 24px;
+        bottom: max(24px, env(safe-area-inset-bottom) + 8px);
         z-index: 10;
         width: 36px;
         height: 36px;
