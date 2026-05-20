@@ -251,6 +251,12 @@
       <canvas id="main"></canvas>
       <canvas id="hand-canvas"></canvas>
       <video id="vid" autoplay muted playsinline></video>
+      <audio
+        id="bgm"
+        src="leberch-ethereal-cinematic.mp3"
+        loop
+        preload="auto"
+      ></audio>
       <div id="status">click start → allow camera</div>
       <div id="guide"></div>
       <div id="tutorial">
@@ -1229,6 +1235,10 @@
           );
           setTutorialStep(2);
           btn.classList.add("hidden");
+          //bgm
+          const bgm = document.getElementById("bgm");
+          bgm.volume = 0.6;
+          bgm.play().catch(() => {});
           document.documentElement.requestFullscreen();
           detectLoop();
         } catch (e) {
