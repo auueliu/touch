@@ -986,6 +986,7 @@
         const hasLeft = handsState.some((h) => h.role === "left");
         const hasRight = handsState.some((h) => h.role === "right");
         if (!hasLeft || !hasRight) return;
+        if (tutorialStep < 4) return;
         const fingerIds = [4, 8, 12, 16, 20];
         const now = performance.now();
         for (let i = 0; i < handsState.length; i++) {
