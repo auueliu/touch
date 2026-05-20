@@ -653,7 +653,8 @@
         };
         const p = presets[color] || presets[0];
 
-        const vol = clamp(speed * 0.15, 0, p.vol);
+        //volume
+        const vol = clamp(speed * 0.13, 0, p.vol);
         if (vol < 0.003) return;
 
         if (color === 4) {
@@ -1395,8 +1396,12 @@
 
         app.renderer.resize(W, H);
 
-        handCanvas.width = W;
-        handCanvas.height = H;
+        const dpr = window.devicePixelRatio || 1;
+        handCanvas.width = W * dpr;
+        handCanvas.height = H * dpr;
+        handCanvas.style.width = W + "px";
+        handCanvas.style.height = H + "px";
+        hCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         for (const p of particles) {
           p.x *= sx;
