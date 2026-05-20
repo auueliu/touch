@@ -619,6 +619,19 @@
         return audioCtx;
       }
 
+      function makeBrownNoise(ctx, duration) {
+        const len = ctx.sampleRate * duration;
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        let last = 0;
+        for (let i = 0; i < len; i++) {
+          const w = Math.random() * 2 - 1;
+          last = (last + 0.02 * w) / 1.02;
+          d[i] = last * 3.5;
+        }
+        return buf;
+      }
+
       function playGrain(speed) {
         const now = performance.now();
         if (now - lastSoundTime < 30) return;
@@ -628,7 +641,7 @@
         const color = fieldPreset.soundColor;
 
         const presets = {
-          0: { freq: 250, Q: 11.0, vol: 0.82, decay: 0.8 }, //
+          0: { freq: 720, Q: 18.2, vol: 1.0, decay: 1.0 }, // wind (brown noise)
           2: { freq: 4030, Q: 0.1, vol: 0.01, decay: 0.8 }, // sand
           4: { freq: 570, Q: 1.3, vol: 0.04, decay: 0.35 }, // glass
         };
@@ -654,10 +667,17 @@
           return;
         }
 
-        const bufLen = ctx.sampleRate * p.decay;
-        const buffer = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+        const buffer =
+          color === 0
+            ? makeBrownNoise(ctx, p.decay)
+            : (() => {
+                const bufLen = ctx.sampleRate * p.decay;
+                const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < bufLen; i++)
+                  data[i] = Math.random() * 2 - 1;
+                return buf;
+              })();
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
@@ -1179,7 +1199,8 @@
           });
           totalSpeed += hand.speed;
         });
-        if (totalSpeed > 50) playGrain(totalSpeed);
+        // hand move speed threshold
+        if (totalSpeed > 25) playGrain(totalSpeed);
       }
 
       function drawConnections() {
@@ -1329,7 +1350,7 @@
           btn.classList.add("hidden");
           //bgm
           const bgm = document.getElementById("bgm");
-          bgm.volume = 0.35;
+          bgm.volume = 0.32;
           bgm.play().catch(() => {});
           document.documentElement.requestFullscreen();
           detectLoop();
