@@ -25,7 +25,18 @@ A 5-step onboarding walks first-time users through camera permission, model load
 
 ## Tech stack
 
-PixiJS v7 · TensorFlow.js · MediaPipe Hands · Web Audio API · HTML/CSS/JavaScript · GitHub Pages
+PixiJS v7 · TensorFlow.js · MediaPipe Hands · Web Audio API · HTML/CSS/JavaScript
+
+## Run locally
+
+```bash
+git clone https://github.com/auueliu/touch.git
+cd touch
+python3 -m http.server 8000
+# open http://localhost:8000
+```
+
+Camera access requires `localhost` or HTTPS. Best in Chrome on a laptop or desktop.
 
 ## Privacy
 
