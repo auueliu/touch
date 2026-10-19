@@ -4,6 +4,8 @@ A browser-based particle field controlled by hand gestures through your webcam.
 
 🔗 **Live:** [touchfield.space](https://touchfield.space/)
 
+<img width="800" height="520" alt="touch demo" src="https://github.com/user-attachments/assets/cbd2379e-0b96-4bf6-bf8a-4810dcaeee87" />
+
 ## Interaction
 
 | Gesture                                  | Effect                                       |
