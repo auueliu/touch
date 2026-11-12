@@ -38,6 +38,7 @@
           document.getElementById("tutorial-title").textContent = "Hi!";
           document.getElementById("tutorial-sub").innerHTML =
             "<em>touch</em> is designed for<br/>laptop or desktop<br/><br/>please visit on a computer";
+          document.getElementById("tutorial-privacy").style.display = "none";
         });
       }
     </script>
@@ -183,6 +184,12 @@
         color: rgba(255, 255, 255, 0.5);
         line-height: 1.8;
       }
+      #tutorial-privacy {
+        font-size: 14px;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.8;
+      }
       #tutorial-title.final {
         font-size: 28px;
         letter-spacing: 0.1em;
@@ -296,7 +303,7 @@
           <div id="tutorial-number">step 1 of 5</div>
           <div id="tutorial-title">press start to allow camera access</div>
           <div id="tutorial-sub">required for live interaction</div>
-          <div id="tutorial-sub">
+          <div id="tutorial-privacy">
             *all camera processing happens locally, no data is saved
           </div>
           <div id="tutorial-anim">
@@ -526,6 +533,8 @@
         document.getElementById("tutorial-number").textContent = s.num;
         document.getElementById("tutorial-title").textContent = s.title;
         document.getElementById("tutorial-sub").innerHTML = s.sub;
+        document.getElementById("tutorial-privacy").style.display =
+          i === 0 ? "" : "none";
         const el = document.getElementById("tutorial-step");
         el.style.animation = "none";
         el.offsetHeight;
